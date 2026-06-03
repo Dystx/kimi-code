@@ -101,6 +101,8 @@ export interface AgentOptions {
   readonly costTracker?: SessionCostTracker | undefined;
   readonly subagentCache?: SubagentResultCache | undefined;
   readonly healthMonitor?: import('../session/health-monitor').SessionHealthMonitor;
+  readonly taskRegistry?: import('../session/task-registry').SessionTaskRegistry;
+  readonly fileLock?: import('../session/file-lock').SessionFileLock;
   readonly onUsageRecorded?: UsageRecordCallback | undefined;
   readonly onTurnEnded?:
     | ((turnId: number, durationMs: number, steps: number, failed: boolean) => void)
@@ -129,6 +131,8 @@ export class Agent {
   readonly costTracker?: SessionCostTracker;
   readonly subagentCache?: SubagentResultCache;
   readonly healthMonitor?: import('../session/health-monitor').SessionHealthMonitor;
+  readonly taskRegistry?: import('../session/task-registry').SessionTaskRegistry;
+  readonly fileLock?: import('../session/file-lock').SessionFileLock;
   readonly onTurnEnded?:
     | ((turnId: number, durationMs: number, steps: number, failed: boolean) => void)
     | undefined;
@@ -173,6 +177,8 @@ export class Agent {
     this.costTracker = options.costTracker;
     this.subagentCache = options.subagentCache;
     this.healthMonitor = options.healthMonitor;
+    this.taskRegistry = options.taskRegistry;
+    this.fileLock = options.fileLock;
     this.onTurnEnded = options.onTurnEnded;
     this.log = options.log ?? log;
     this.telemetry = options.telemetry ?? noopTelemetryClient;

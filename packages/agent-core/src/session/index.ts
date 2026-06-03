@@ -16,6 +16,8 @@ import { SessionHealthMonitor } from './health-monitor';
 import { HookEngine, type HookDef } from './hooks';
 import { SessionMessageBus } from './message-bus';
 import { SessionSharedStore } from './shared-store';
+import { SessionTaskRegistry } from './task-registry';
+import { SessionFileLock } from './file-lock';
 import type { PermissionManagerOptions, PermissionRule } from '../agent/permission';
 import { parseBooleanEnv, resolveConfigValue, type BackgroundConfig } from '../config';
 import { makeErrorPayload } from '../errors';
@@ -120,6 +122,8 @@ export class Session {
   readonly costTracker: SessionCostTracker;
   readonly subagentCache: SubagentResultCache;
   readonly healthMonitor: SessionHealthMonitor;
+  readonly taskRegistry: SessionTaskRegistry;
+  readonly fileLock: SessionFileLock;
   private readonly logHandle: SessionLogHandle | undefined;
   readonly hookEngine: HookEngine;
   readonly goals: SessionGoalStore;
@@ -154,6 +158,8 @@ export class Session {
     this.costTracker = new SessionCostTracker();
     this.subagentCache = new SubagentResultCache();
     this.healthMonitor = new SessionHealthMonitor();
+    this.taskRegistry = new SessionTaskRegistry();
+    this.fileLock = new SessionFileLock();
     this.rpc = options.rpc;
     this.hookEngine = new HookEngine(options.hooks, {
       cwd: options.kaos.getcwd(),
@@ -500,6 +506,8 @@ export class Session {
       costTracker: this.costTracker,
       subagentCache: this.subagentCache,
       healthMonitor: this.healthMonitor,
+      taskRegistry: this.taskRegistry,
+      fileLock: this.fileLock,
       onUsageRecorded: (model, usage) => {
         this.costTracker.record(model, usage);
         this.healthMonitor.recordUsage(model, usage);

@@ -1,6 +1,6 @@
 import { uniq } from '@antfu/utils';
 import type { ChatProvider, Tool } from '@moonshot-ai/kosong';
-import { join } from 'pathe';
+import { basename, join } from 'pathe';
 import picomatch from 'picomatch';
 
 import type { Agent } from '..';
@@ -387,6 +387,7 @@ export class ToolManager {
         new b.BashTool(kaos, cwd, background, {
           allowBackground,
         }),
+        new b.ExecuteCodeTool(kaos, cwd),
         (modelCapabilities.image_in || modelCapabilities.video_in) &&
           new b.ReadMediaFileTool(kaos, workspace, modelCapabilities, videoUploader),
         this.agent.homedir &&
@@ -446,6 +447,19 @@ export class ToolManager {
         this.agent.type === 'main' && this.agent.costTracker && new b.SetCostBudgetTool(this.agent.costTracker),
         this.agent.type === 'main' && this.agent.costTracker && new b.GetCostStatusTool(this.agent.costTracker),
         this.agent.type === 'main' && this.agent.healthMonitor && new b.GetSessionHealthTool(this.agent.healthMonitor),
+        this.agent.hooks && new b.RegisterHookTool(this.agent.hooks),
+        this.agent.hooks && new b.ListHooksTool(this.agent.hooks),
+        this.agent.hooks && new b.RemoveHookTool(this.agent.hooks),
+        this.agent.taskRegistry && new b.CreateTaskTool(this.agent.taskRegistry),
+        this.agent.taskRegistry && new b.UpdateTaskTool(this.agent.taskRegistry),
+        this.agent.taskRegistry && new b.ListTasksTool(this.agent.taskRegistry),
+        this.agent.taskRegistry && new b.GetTaskTool(this.agent.taskRegistry),
+        this.agent.fileLock &&
+          new b.AcquireLockTool(this.agent.fileLock, this.agent.homedir ? basename(this.agent.homedir) : this.agent.type),
+        this.agent.fileLock &&
+          new b.ReleaseLockTool(this.agent.fileLock, this.agent.homedir ? basename(this.agent.homedir) : this.agent.type),
+        this.agent.fileLock &&
+          new b.ListLocksTool(this.agent.fileLock, this.agent.homedir ? basename(this.agent.homedir) : this.agent.type),
         toolServices?.webSearcher && new b.WebSearchTool(toolServices.webSearcher),
         toolServices?.urlFetcher && new b.FetchURLTool(toolServices.urlFetcher),
         new b.BuildCodeIndexTool(kaos),

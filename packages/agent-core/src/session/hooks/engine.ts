@@ -13,15 +13,15 @@ const DEFAULT_HOOK_TIMEOUT_SECONDS = 30;
 export class HookEngine {
   private readonly byEvent = new Map<string, HookDef[]>();
   private readonly pendingTriggers = new Set<Promise<HookResult[]>>();
+  private hookIdCounter = 0;
+  private readonly hookIds = new Map<string, HookDef>();
 
   constructor(
     hooks: readonly HookDef[] = [],
     private readonly options: HookEngineOptions = {},
   ) {
     for (const hook of hooks) {
-      const entries = this.byEvent.get(hook.event) ?? [];
-      entries.push(hook);
-      this.byEvent.set(hook.event, entries);
+      this.addHookInternal(hook);
     }
   }
 
@@ -31,6 +31,40 @@ export class HookEngine {
       result[event] = hooks.length;
     }
     return result;
+  }
+
+  register(hook: HookDef): string {
+    const id = `hook_${++this.hookIdCounter}`;
+    this.hookIds.set(id, hook);
+    this.addHookInternal(hook);
+    return id;
+  }
+
+  remove(id: string): boolean {
+    const hook = this.hookIds.get(id);
+    if (hook === undefined) return false;
+    this.hookIds.delete(id);
+    const entries = this.byEvent.get(hook.event);
+    if (entries !== undefined) {
+      const idx = entries.findIndex((h) => h === hook);
+      if (idx >= 0) {
+        entries.splice(idx, 1);
+        if (entries.length === 0) {
+          this.byEvent.delete(hook.event);
+        }
+      }
+    }
+    return true;
+  }
+
+  list(): Array<{ readonly id: string; readonly hook: HookDef }> {
+    return Array.from(this.hookIds.entries()).map(([id, hook]) => ({ id, hook }));
+  }
+
+  private addHookInternal(hook: HookDef): void {
+    const entries = this.byEvent.get(hook.event) ?? [];
+    entries.push(hook);
+    this.byEvent.set(hook.event, entries);
   }
 
   trigger(event: string, args: HookEngineTriggerArgs = {}): Promise<HookResult[]> {
