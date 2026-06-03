@@ -280,6 +280,7 @@ describe('current builtin collaboration tools', () => {
       prompt: 'Investigate',
       description: 'Find cause',
       runInBackground: false,
+      worktree: false,
       signal,
     });
     expect(result.output).toContain('child result');

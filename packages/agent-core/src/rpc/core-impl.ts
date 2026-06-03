@@ -186,17 +186,32 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
     this.sdk = rpcClient(this);
   }
 
-  private async resolveCustomAgentProfiles(): Promise<Record<string, ResolvedAgentProfile> | undefined> {
-    if (this.agentFile === undefined) return undefined;
+  private async resolveCustomAgentProfiles(
+    workDir?: string,
+  ): Promise<Record<string, ResolvedAgentProfile> | undefined> {
     if (this.customAgentProfiles !== undefined) return this.customAgentProfiles;
 
-    const dir = dirname(this.agentFile);
-    const yamlFiles = await findYamlFilesRecursive(dir);
+    const yamlFiles: string[] = [];
 
-    // Always include the explicitly requested file even if scan failed.
-    if (!yamlFiles.includes(this.agentFile)) {
-      yamlFiles.push(this.agentFile);
+    if (this.agentFile !== undefined) {
+      const dir = dirname(this.agentFile);
+      const agentFileDirYaml = await findYamlFilesRecursive(dir);
+      yamlFiles.push(...agentFileDirYaml);
+      if (!yamlFiles.includes(this.agentFile)) {
+        yamlFiles.push(this.agentFile);
+      }
     }
+
+    // Auto-discover project-local agent profiles
+    if (workDir !== undefined) {
+      const projectDirs = await discoverProjectAgentProfileDirs(workDir);
+      for (const dir of projectDirs) {
+        const discovered = await findYamlFilesRecursive(dir);
+        yamlFiles.push(...discovered);
+      }
+    }
+
+    if (yamlFiles.length === 0) return undefined;
 
     this.customAgentProfiles = await loadAgentProfilesFromDir(yamlFiles, DEFAULT_AGENT_PROFILES);
     return this.customAgentProfiles;
@@ -215,7 +230,7 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
         homeDir: this.homeDir,
         customConfigFile: this.mcpConfigFile,
       }),
-      this.resolveCustomAgentProfiles(),
+      this.resolveCustomAgentProfiles(workDir),
     ]);
     const withCallerMcp = mergeCallerMcpServers(baseMcpConfig, options.mcpServers);
     const summary = await this.sessionStore.create({
@@ -319,7 +334,7 @@ export class KimiCore implements PromisableMethods<CoreAPI> {
         homeDir: this.homeDir,
         customConfigFile: this.mcpConfigFile,
       }),
-      this.resolveCustomAgentProfiles(),
+      this.resolveCustomAgentProfiles(summary.workDir),
     ]);
     const withCallerMcp = mergeCallerMcpServers(baseMcpConfig, input.mcpServers);
     await this.pluginsReady;
@@ -958,6 +973,23 @@ async function resumeSessionResult(
     agents,
     warning,
   };
+}
+
+async function discoverProjectAgentProfileDirs(workDir: string): Promise<string[]> {
+  const results: string[] = [];
+  const dirs = ['.kimi-code/agents', '.agents'];
+  for (const dir of dirs) {
+    const fullPath = join(workDir, dir);
+    try {
+      const s = await stat(fullPath);
+      if (s.isDirectory()) {
+        results.push(fullPath);
+      }
+    } catch {
+      // Directory doesn't exist, skip
+    }
+  }
+  return results;
 }
 
 async function warnIfLogFlushFails(

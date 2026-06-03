@@ -127,6 +127,14 @@ When working on files in subdirectories, always check whether those directories 
 
 If you modified any files/styles/structures/configurations/workflows/... mentioned in `AGENTS.md` files, you MUST update the corresponding `AGENTS.md` files to keep them up-to-date.
 
+# Persistent Memory
+
+The following memory has been accumulated across sessions. It contains project conventions, learned patterns, decisions, and context that should inform your work:
+
+{{ KIMI_MEMORY }}
+
+If you learn something new about the project (conventions, patterns, important decisions) that should persist across sessions, write it to `.kimi-code/memory.md` using the Write tool.
+
 # Skills
 
 Skills are reusable, composable capabilities that enhance your abilities. Each skill is either a self-contained directory with a `SKILL.md` file or a standalone `.md` file that contains instructions, examples, and/or reference material.

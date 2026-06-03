@@ -224,6 +224,7 @@ describe('AgentTool', () => {
       prompt: 'Investigate',
       description: 'Find cause',
       runInBackground: false,
+      worktree: false,
       signal,
     });
     expect(result.output).toContain('agent_id: agent-child');
@@ -284,6 +285,7 @@ describe('AgentTool', () => {
       prompt: 'Continue',
       description: 'Continue work',
       runInBackground: false,
+      worktree: false,
       signal,
     });
     expect(result.output).toContain('agent_id: agent-existing');
@@ -380,6 +382,7 @@ describe('AgentTool', () => {
       prompt: 'Continue',
       description: 'Continue work',
       runInBackground: false,
+      worktree: false,
       signal,
     });
     expect(result.output).toContain('actual_subagent_type: explore');

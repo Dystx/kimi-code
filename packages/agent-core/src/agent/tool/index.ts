@@ -1,5 +1,6 @@
 import { uniq } from '@antfu/utils';
 import type { ChatProvider, Tool } from '@moonshot-ai/kosong';
+import { join } from 'pathe';
 import picomatch from 'picomatch';
 
 import type { Agent } from '..';
@@ -388,6 +389,10 @@ export class ToolManager {
         }),
         (modelCapabilities.image_in || modelCapabilities.video_in) &&
           new b.ReadMediaFileTool(kaos, workspace, modelCapabilities, videoUploader),
+        this.agent.homedir &&
+          new b.CheckpointTool(kaos, join(this.agent.homedir, 'checkpoints')),
+        this.agent.homedir &&
+          new b.RollbackTool(kaos, join(this.agent.homedir, 'checkpoints')),
         new b.EnterPlanModeTool(this.agent),
         new b.ExitPlanModeTool(this.agent),
         new b.PlanTrackerTool(this.agent),
@@ -422,6 +427,11 @@ export class ToolManager {
             {
               log: this.agent.log,
             },
+          ),
+        this.agent.subagentHost &&
+          new b.AgentBatchTool(
+            this.agent.subagentHost,
+            DEFAULT_AGENT_PROFILES['agent']?.subagents,
           ),
         toolServices?.webSearcher && new b.WebSearchTool(toolServices.webSearcher),
         toolServices?.urlFetcher && new b.FetchURLTool(toolServices.urlFetcher),

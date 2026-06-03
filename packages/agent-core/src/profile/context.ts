@@ -9,16 +9,17 @@ const AGENTS_MD_MAX_BYTES = 32 * 1024;
 const S_IFMT = 0o170000;
 const S_IFREG = 0o100000;
 
-export type PreparedSystemPromptContext = Pick<SystemPromptContext, 'cwdListing' | 'agentsMd'>;
+export type PreparedSystemPromptContext = Pick<SystemPromptContext, 'cwdListing' | 'agentsMd' | 'memory'>;
 
 export async function prepareSystemPromptContext(
   kaos: Kaos,
 ): Promise<PreparedSystemPromptContext> {
-  const [cwdListing, agentsMd] = await Promise.all([
+  const [cwdListing, agentsMd, memory] = await Promise.all([
     listDirectory(kaos),
     loadAgentsMd(kaos),
+    loadMemoryMd(kaos),
   ]);
-  return { cwdListing, agentsMd };
+  return { cwdListing, agentsMd, memory };
 }
 
 export async function loadAgentsMd(kaos: Kaos): Promise<string> {
@@ -116,6 +117,24 @@ async function isFile(kaos: Kaos, path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function loadMemoryMd(kaos: Kaos): Promise<string> {
+  const workDir = kaos.getcwd();
+  const projectRoot = await findProjectRoot(kaos, workDir);
+  const home = kaos.gethome();
+
+  // Try project-local first, then user-home
+  const candidates = [
+    join(projectRoot, '.kimi-code', 'memory.md'),
+    join(home, '.kimi-code', 'memory.md'),
+  ];
+
+  for (const path of candidates) {
+    const file = await readAgentFile(kaos, path);
+    if (file !== undefined) return renderAgentFiles([file]);
+  }
+  return '';
 }
 
 function renderAgentFiles(files: readonly AgentFile[]): string {

@@ -85,6 +85,12 @@ export const AgentToolInputSchema = z.preprocess(
       .describe(
         'Timeout in seconds for the agent task (min 30s, max 3600s / 1hr). When omitted, a foreground task runs until completion with no timeout. The agent is stopped if it exceeds this limit.',
       ),
+    worktree: z
+      .boolean()
+      .optional()
+      .describe(
+        'If true, the subagent runs in an isolated git worktree. Use this when the subagent will edit files and you want to avoid conflicts with the parent agent or other subagents. The worktree is cleaned up automatically when the subagent finishes.',
+      ),
   }),
 );
 
@@ -202,6 +208,7 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
         prompt: args.prompt,
         description: args.description,
         runInBackground,
+        worktree: args.worktree === true,
         signal: backgroundController?.signal ?? foregroundDeadline?.signal ?? signal,
       };
 

@@ -14,6 +14,7 @@ import { linkAbortSignal, userCancellationReason } from '../utils/abort';
 import { collectGitContext } from './git-context';
 import type { Session } from './index';
 import SUMMARY_CONTINUATION_PROMPT from './summary-continuation.md';
+import { createWorktree, removeWorktree } from './worktree';
 
 /**
  * A subagent summary shorter than this many characters triggers one
@@ -50,6 +51,7 @@ type RunSubagentOptions = {
   readonly runInBackground: boolean;
   readonly origin?: PromptOrigin | undefined;
   readonly signal: AbortSignal;
+  readonly worktree?: boolean | undefined;
 };
 
 type SubagentCompletion = {
@@ -95,6 +97,7 @@ export class SessionSubagentHost {
       runInBackground: options.runInBackground,
     });
 
+    let worktreePath: string | undefined;
     const completion = this.runChild(
       parent,
       id,
@@ -104,10 +107,19 @@ export class SessionSubagentHost {
         ...options,
         signal: controller.signal,
       },
-      () => this.configureChild(parent, agent, profile),
+      async () => {
+        if (options.worktree === true) {
+          const wt = await createWorktree(parent.kaos, parent.config.cwd, id);
+          worktreePath = wt.path;
+        }
+        await this.configureChild(parent, agent, profile, worktreePath);
+      },
     ).finally(() => {
       unlinkAbortSignal();
       this.activeChildren.delete(id);
+      if (worktreePath !== undefined) {
+        void removeWorktree(parent.kaos, parent.config.cwd, worktreePath);
+      }
     });
 
     return {
@@ -310,10 +322,11 @@ export class SessionSubagentHost {
     parent: Agent,
     child: Agent,
     profile: ResolvedAgentProfile,
+    worktreePath?: string,
   ): Promise<void> {
     // A subagent always inherits the parent agent's model.
     child.config.update({
-      cwd: parent.config.cwd,
+      cwd: worktreePath ?? parent.config.cwd,
       modelAlias: parent.config.modelAlias,
       thinkingLevel: parent.config.thinkingLevel,
     });
