@@ -41,6 +41,7 @@ import { HookEngine } from '../session/hooks';
 import { InjectionManager } from './injection/manager';
 import { PermissionManager, type PermissionManagerOptions } from './permission';
 import { PlanMode } from './plan';
+import { PlanTracker, planTrackerPath } from './plan/tracker';
 import {
   AgentRecords,
   BlobStore,
@@ -120,6 +121,7 @@ export class Agent {
   readonly injection: InjectionManager;
   readonly permission: PermissionManager;
   readonly planMode: PlanMode;
+  readonly planTracker: PlanTracker;
   readonly usage: UsageRecorder;
   readonly skills: SkillManager | null;
   readonly tools: ToolManager;
@@ -170,6 +172,7 @@ export class Agent {
     this.injection = new InjectionManager(this);
     this.permission = new PermissionManager(this, options.permission);
     this.planMode = new PlanMode(this);
+    this.planTracker = new PlanTracker(this, planTrackerPath(this.homedir) ?? '');
     this.usage = new UsageRecorder(this);
     this.skills = options.skills ? new SkillManager(this, options.skills) : null;
     this.tools = new ToolManager(this);
@@ -291,6 +294,7 @@ export class Agent {
     await this.background.loadFromDisk();
     await this.background.reconcile();
     await this.cron?.loadFromDisk();
+    await this.planTracker.load();
     this.turn.finishResume();
     return result;
   }

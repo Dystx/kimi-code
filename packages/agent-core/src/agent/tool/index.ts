@@ -390,6 +390,7 @@ export class ToolManager {
           new b.ReadMediaFileTool(kaos, workspace, modelCapabilities, videoUploader),
         new b.EnterPlanModeTool(this.agent),
         new b.ExitPlanModeTool(this.agent),
+        new b.PlanTrackerTool(this.agent),
         // Goal tools are main-agent-only and gated by the goal-command flag.
         flags.enabled('goal-command') &&
           this.agent.type === 'main' &&

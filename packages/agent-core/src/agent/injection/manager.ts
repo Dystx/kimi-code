@@ -5,6 +5,7 @@ import type { DynamicInjector } from './injector';
 import { PermissionModeInjector } from './permission-mode';
 import { PluginSessionStartInjector } from './plugin-session-start';
 import { PlanModeInjector } from './plan-mode';
+import { PlanTrackerInjector } from './plan-tracker';
 import { TodoListReminderInjector } from './todo-list';
 
 export class InjectionManager {
@@ -21,6 +22,7 @@ export class InjectionManager {
       new PluginSessionStartInjector(agent),
       new TodoListReminderInjector(agent),
       new PlanModeInjector(agent),
+      new PlanTrackerInjector(agent),
       new PermissionModeInjector(agent),
     ];
     this.goalInjector =

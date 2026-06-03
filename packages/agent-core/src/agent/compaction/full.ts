@@ -407,11 +407,19 @@ export class FullCompaction {
   private postProcessSummary(summary: string): string {
     const storeData = this.agent.tools.storeData();
     const todos = (storeData['todo'] as readonly TodoItem[] | undefined) ?? [];
-    if (todos.length === 0) {
-      return summary;
+    const planTrackerSummary = this.agent.planTracker.isActive
+      ? this.agent.planTracker.getSummaryText()
+      : '';
+
+    const parts: string[] = [summary.trim()];
+    if (planTrackerSummary.length > 0) {
+      parts.push(planTrackerSummary);
     }
-    const todoMarkdown = renderTodoList(todos, '## TODO List');
-    return `${summary.trim()}\n\n${todoMarkdown}`;
+    if (todos.length > 0) {
+      parts.push(renderTodoList(todos, '## TODO List'));
+    }
+
+    return parts.join('\n\n');
   }
 }
 

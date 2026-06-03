@@ -11,8 +11,8 @@ export interface CLIOptions {
   outputFormat: PromptOutputFormat | undefined;
   prompt: string | undefined;
   skillsDirs: string[];
-  agentFile: string | undefined;
-  mcpConfigFile: string | undefined;
+  agentFile?: string | undefined;
+  mcpConfigFile?: string | undefined;
 }
 
 export interface ValidatedOptions {

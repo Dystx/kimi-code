@@ -27,6 +27,9 @@ export class PlanMode {
       throw new Error('Already in plan mode');
     }
 
+    // A new plan replaces any previous tracked plan.
+    await this.agent.planTracker?.clear();
+
     this._isActive = true;
     this._planId = id;
     this._planFilePath = null;
@@ -75,6 +78,7 @@ export class PlanMode {
     this._isActive = false;
     this._planId = null;
     this._planFilePath = null;
+    void this.agent.planTracker?.clear();
     this.agent.emitStatusUpdated();
   }
 

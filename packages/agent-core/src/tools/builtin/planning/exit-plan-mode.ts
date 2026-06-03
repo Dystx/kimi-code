@@ -138,6 +138,15 @@ export class ExitPlanModeTool implements BuiltinTool<ExitPlanModeInput> {
 
     this.agent.telemetry.track('plan_resolved', { outcome: 'auto_approved' });
 
+    // Initialize the durable plan tracker from the approved plan so the plan
+    // survives context compaction and remains visible throughout execution.
+    if (this.agent.planTracker) {
+      await this.agent.planTracker.initializeFromPlan(
+        resolvedPlan.plan,
+        resolvedPlan.path ? resolvedPlan.path.split('/').pop()?.replace(/\.md$/, '') || 'Plan' : 'Plan',
+      );
+    }
+
     return {
       isError: false,
       output: `Exited plan mode. ${formatPlanForOutput(resolvedPlan.plan, resolvedPlan.path)}`,
