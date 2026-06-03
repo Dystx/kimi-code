@@ -6,7 +6,6 @@ import type { ExecutableToolResult, ToolExecution } from '../../../loop/types';
 import { toInputJsonSchema } from '../../support/input-schema';
 import type { Kaos } from '@moonshot-ai/kaos';
 import { join } from 'pathe';
-import { readFile } from 'node:fs/promises';
 
 export const BuildCodeIndexInputSchema = z.object({
   directories: z
@@ -110,7 +109,7 @@ export class BuildCodeIndexTool implements BuiltinTool<BuildCodeIndexInput> {
           if (isExcluded) continue;
 
           try {
-            const content = await readFile(filePath, 'utf-8');
+            const content = await this.kaos.readText(filePath);
             const ext = filePath.split('.').pop() ?? '';
             const language = LANGUAGE_MAP[ext] ?? ext;
             const lines = content.split('\n');

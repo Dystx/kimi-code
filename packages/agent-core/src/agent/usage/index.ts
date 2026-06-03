@@ -45,7 +45,10 @@ export class UsageRecorder {
       this.currentTurn =
         this.currentTurn === undefined ? copyUsage(usage) : addUsage(this.currentTurn, usage);
     }
-    this.onRecord?.(model, usage);
+    // Only report to external trackers for live usage, not replayed records.
+    if (this.agent?.records.restoring === null) {
+      this.onRecord?.(model, usage);
+    }
     this.agent?.emitStatusUpdated();
   }
 

@@ -185,9 +185,24 @@ export class SessionSubagentHost {
       // A resumed subagent is realigned to the parent agent's current model,
       // so a parent setModel between the initial spawn and the resume is
       // reflected — a subagent always uses the parent agent's model.
-      () => {
+      async () => {
         child.config.update({ modelAlias: parent.config.modelAlias });
-        return Promise.resolve();
+        // If the child was originally spawned in a worktree that has since been
+        // cleaned up, revert its cwd to the parent's cwd so resume doesn't
+        // operate in a deleted directory.
+        const currentCwd = child.config.cwd;
+        const isWorktree = currentCwd.includes('.kimi-worktrees');
+        if (isWorktree) {
+          try {
+            const st = await child.kaos.stat(currentCwd);
+            // stMode & S_IFMT === S_IFDIR  (0o040000)
+            if ((st.stMode & 0o170000) !== 0o040000) {
+              child.config.update({ cwd: parent.config.cwd });
+            }
+          } catch {
+            child.config.update({ cwd: parent.config.cwd });
+          }
+        }
       },
     ).finally(() => {
       unlinkAbortSignal();
