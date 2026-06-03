@@ -40,3 +40,7 @@ subagents:
     description: Fast codebase exploration with prompt-enforced read-only behavior.
   plan:
     description: Read-only implementation planning and architecture design.
+  reviewer:
+    description: Code review specialist for quality assurance and defect detection.
+  architect:
+    description: System design and refactoring planning with implementation roadmaps.

@@ -334,6 +334,11 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
             '[summary]',
             result.result,
           ];
+          if (result.changes !== undefined && result.changes.length > 0) {
+            lines.push('');
+            lines.push('[changes]');
+            lines.push(result.changes);
+          }
           return { output: lines.join('\n') };
         } catch (error) {
           let message: string;

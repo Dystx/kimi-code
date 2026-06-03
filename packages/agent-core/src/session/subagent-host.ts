@@ -1,4 +1,5 @@
 import { grandTotal, type TokenUsage } from '@moonshot-ai/kosong';
+import type { Kaos } from '@moonshot-ai/kaos';
 
 import type { Agent } from '../agent';
 import type { PromptOrigin } from '../agent/context';
@@ -63,6 +64,7 @@ type RunSubagentOptions = {
 type SubagentCompletion = {
   readonly result: string;
   readonly usage?: TokenUsage;
+  readonly changes?: string | undefined;
 };
 
 type ActiveChild = {
@@ -299,6 +301,9 @@ export class SessionSubagentHost {
     const startTime = Date.now();
     this.subagentStatuses.set(childId, { kind: 'running', startedAt: startTime });
 
+    // Capture workspace state before subagent runs so we can diff after.
+    const beforeStatus = await captureGitStatus(child.kaos, child.config.cwd);
+
     try {
       await prepareChild();
       options.signal.throwIfAborted();
@@ -342,6 +347,7 @@ export class SessionSubagentHost {
         }
       }
       const usage = child.usage.data().total;
+      const changes = await computeGitDiff(child.kaos, child.config.cwd, beforeStatus);
       this.subagentStatuses.set(childId, {
         kind: 'completed',
         startedAt: startTime,
@@ -358,7 +364,7 @@ export class SessionSubagentHost {
         contextTokens: child.context.tokenCount,
       });
       this.triggerSubagentStop(parent, profileName, result);
-      return { result, usage };
+      return { result, usage, changes };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.subagentStatuses.set(childId, {
@@ -450,6 +456,68 @@ async function runChildTurnToCompletion(child: Agent, signal: AbortSignal): Prom
     );
   }
   throwIfSubagentStoppedAtMaxTokens(completion.stopReason);
+}
+
+async function captureGitStatus(kaos: Kaos, cwd: string): Promise<string | undefined> {
+  try {
+    const proc = await kaos.withCwd(cwd).execWithEnv(
+      ['git', 'status', '--short'],
+      { ...process.env as Record<string, string>, GIT_TERMINAL_PROMPT: '0' },
+    );
+    proc.stdin.end();
+    const chunks: Buffer[] = [];
+    for await (const chunk of proc.stdout) {
+      chunks.push(chunk);
+    }
+    const output = Buffer.concat(chunks).toString('utf-8').trim();
+    return output.length > 0 ? output : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function computeGitDiff(
+  kaos: Kaos,
+  cwd: string,
+  beforeStatus: string | undefined,
+): Promise<string | undefined> {
+  try {
+    const afterStatus = await captureGitStatus(kaos, cwd);
+    if (!beforeStatus && !afterStatus) return undefined;
+
+    // If we have before/after status, compute the delta
+    const beforeLines = new Set(beforeStatus?.split('\n') ?? []);
+    const afterLines = new Set(afterStatus?.split('\n') ?? []);
+    const added: string[] = [];
+    for (const line of afterLines) {
+      if (!beforeLines.has(line)) added.push(line);
+    }
+    if (added.length === 0) return undefined;
+
+    // Also try to get actual diff content for the changed files
+    const diffProc = await kaos.withCwd(cwd).execWithEnv(
+      ['git', 'diff', '--stat'],
+      { ...process.env as Record<string, string>, GIT_TERMINAL_PROMPT: '0' },
+    );
+    diffProc.stdin.end();
+    const diffChunks: Buffer[] = [];
+    for await (const chunk of diffProc.stdout) {
+      diffChunks.push(chunk);
+    }
+    const diffStat = Buffer.concat(diffChunks).toString('utf-8').trim();
+
+    const lines: string[] = ['Files changed:'];
+    for (const change of added) {
+      lines.push(`  ${change}`);
+    }
+    if (diffStat.length > 0) {
+      lines.push('');
+      lines.push(diffStat);
+    }
+    return lines.join('\n');
+  } catch {
+    return undefined;
+  }
 }
 
 function checkBudgets(

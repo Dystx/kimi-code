@@ -129,6 +129,7 @@ export class AgentBatchTool implements BuiltinTool<AgentBatchInput> {
           description: s.description,
           result: completion.result,
           usage: completion.usage,
+          changes: completion.changes,
         };
       }),
     );
@@ -153,6 +154,11 @@ export class AgentBatchTool implements BuiltinTool<AgentBatchInput> {
         }
         lines.push('');
         lines.push(value.result);
+        if (value.changes !== undefined && value.changes.length > 0) {
+          lines.push('');
+          lines.push('[changes]');
+          lines.push(value.changes);
+        }
       } else {
         lines.push(`### [${i + 1}] ${task.description} — FAILED`);
         const reason = r.reason instanceof Error ? r.reason.message : String(r.reason);
