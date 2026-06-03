@@ -12,6 +12,7 @@ tools:
   - Grep
   - Glob
   - Bash
+  - ExecuteCode
   - TaskList
   - TaskOutput
   - TaskStop
@@ -23,6 +24,8 @@ tools:
   - Skill
   - WebSearch
   - Agent
+  - AgentBatch
+  - SubagentStatus
   - FetchURL
   - AskUserQuestion
   - EnterPlanMode
@@ -31,6 +34,28 @@ tools:
   - GetGoal
   - SetGoalBudget
   - UpdateGoal
+  - SendMessage
+  - ReceiveMessage
+  - ReadSharedState
+  - WriteSharedState
+  - ListSharedState
+  - SetCostBudget
+  - GetCostStatus
+  - GetSessionHealth
+  - RegisterHook
+  - ListHooks
+  - RemoveHook
+  - CreateTask
+  - UpdateTask
+  - ListTasks
+  - GetTask
+  - AcquireLock
+  - ReleaseLock
+  - ListLocks
+  - BuildCodeIndex
+  - QueryCodeIndex
+  - Checkpoint
+  - Rollback
   - mcp__*
 
 subagents:
