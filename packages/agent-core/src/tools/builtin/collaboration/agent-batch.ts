@@ -41,6 +41,10 @@ const AgentBatchItemSchema = z.object({
     .positive()
     .optional()
     .describe('Maximum wall-clock milliseconds this subagent may run'),
+  stream_updates: z
+    .boolean()
+    .optional()
+    .describe('If true, emit progress events for this subagent as it works'),
 });
 
 export const AgentBatchInputSchema = z.object({
@@ -103,6 +107,7 @@ export class AgentBatchTool implements BuiltinTool<AgentBatchInput> {
         signal,
         tokenBudget: task.token_budget,
         timeBudgetMs: task.time_budget_ms,
+        streamUpdates: task.stream_updates,
       });
       spawned.push({ index: i, description: task.description, profileName, handle });
     }

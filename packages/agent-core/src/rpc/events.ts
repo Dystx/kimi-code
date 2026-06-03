@@ -227,6 +227,15 @@ export interface SubagentFailedEvent {
   readonly error: string;
 }
 
+export interface SubagentProgressEvent {
+  readonly type: 'subagent.progress';
+  readonly subagentId: string;
+  readonly parentToolCallId: string;
+  readonly preview: string;
+  readonly usage?: TokenUsage | undefined;
+  readonly contextTokens?: number | undefined;
+}
+
 export interface CompactionStartedEvent {
   readonly type: 'compaction.started';
   readonly trigger: 'manual' | 'auto';
@@ -309,6 +318,7 @@ export type AgentEvent =
   | SubagentSpawnedEvent
   | SubagentCompletedEvent
   | SubagentFailedEvent
+  | SubagentProgressEvent
   | CompactionStartedEvent
   | CompactionBlockedEvent
   | CompactionCancelledEvent

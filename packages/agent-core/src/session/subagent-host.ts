@@ -56,6 +56,8 @@ type RunSubagentOptions = {
   readonly tokenBudget?: number | undefined;
   /** Maximum wall-clock milliseconds the subagent may run before being auto-killed. */
   readonly timeBudgetMs?: number | undefined;
+  /** If true, emit progress events on the parent agent after each subagent turn. */
+  readonly streamUpdates?: boolean | undefined;
 };
 
 type SubagentCompletion = {
@@ -302,11 +304,15 @@ export class SessionSubagentHost {
       // Check budgets after each turn
       checkBudgets(child, options, startTime);
 
+      let result = lastAssistantText(child);
+      if (options.streamUpdates === true) {
+        this.emitSubagentProgress(parent, childId, options.parentToolCallId, result, child);
+      }
+
       // A subagent that returns an overly terse summary leaves the parent
       // agent under-informed. Give it a bounded number of chances to expand
       // the handoff; if it is still short after that, accept it as-is rather
       // than retrying indefinitely.
-      let result = lastAssistantText(child);
       let remainingContinuations = SUMMARY_CONTINUATION_ATTEMPTS;
       while (remainingContinuations > 0 && result.length < SUMMARY_MIN_LENGTH) {
         remainingContinuations -= 1;
@@ -316,6 +322,9 @@ export class SessionSubagentHost {
         await runChildTurnToCompletion(child, options.signal);
         checkBudgets(child, options, startTime);
         result = lastAssistantText(child);
+        if (options.streamUpdates === true) {
+          this.emitSubagentProgress(parent, childId, options.parentToolCallId, result, child);
+        }
       }
       const usage = child.usage.data().total;
       this.subagentStatuses.set(childId, {
@@ -394,6 +403,23 @@ export class SessionSubagentHost {
         agentName: profileName,
         response: result.slice(0, HOOK_TEXT_PREVIEW_LENGTH),
       },
+    });
+  }
+
+  private emitSubagentProgress(
+    parent: Agent,
+    subagentId: string,
+    parentToolCallId: string,
+    preview: string,
+    child: Agent,
+  ): void {
+    parent.emitEvent({
+      type: 'subagent.progress',
+      subagentId,
+      parentToolCallId,
+      preview: preview.slice(0, HOOK_TEXT_PREVIEW_LENGTH),
+      usage: child.usage.data().total,
+      contextTokens: child.context.tokenCount,
     });
   }
 }

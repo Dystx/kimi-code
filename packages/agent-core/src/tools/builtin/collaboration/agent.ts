@@ -107,6 +107,12 @@ export const AgentToolInputSchema = z.preprocess(
       .describe(
         'Maximum wall-clock milliseconds the subagent may run before being auto-killed. Use this to bound latency for time-sensitive tasks.',
       ),
+    stream_updates: z
+      .boolean()
+      .optional()
+      .describe(
+        'If true, the parent receives subagent.progress events after each subagent turn, showing partial results before the subagent completes. Use this for long-running subagents where seeing progress is valuable.',
+      ),
   }),
 );
 
@@ -228,6 +234,7 @@ export class AgentTool implements BuiltinTool<AgentToolInput> {
         signal: backgroundController?.signal ?? foregroundDeadline?.signal ?? signal,
         tokenBudget: args.token_budget,
         timeBudgetMs: args.time_budget_ms,
+        streamUpdates: args.stream_updates,
       };
 
       let handle: SubagentHandle;
