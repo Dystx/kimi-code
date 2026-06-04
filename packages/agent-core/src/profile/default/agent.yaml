@@ -46,6 +46,7 @@ tools:
   - LearnFromSession
   - ReviewDraftSkills
   - PromoteDraftSkill
+  - ReadReflections
   - RegisterHook
   - ListHooks
   - RemoveHook

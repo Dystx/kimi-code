@@ -153,7 +153,7 @@ export class SessionLearningEngine {
 
     for (const pattern of patterns) {
       if (pattern.type === 'tool-sequence' && pattern.successRate === 1) {
-        const match = pattern.description.match(/ Reliable use of (\S+)/);
+        const match = pattern.description.match(/Reliable use of (\S+)/);
         const toolName = match?.[1] ?? 'tool';
         const id = `reliable-${toolName.toLowerCase()}`;
         if (seen.has(id)) continue;

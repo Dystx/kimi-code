@@ -451,6 +451,7 @@ export class ToolManager {
         this.agent.type === 'main' && this.agent.learningEngine && new b.LearnFromSessionTool(this.agent.learningEngine),
         this.agent.type === 'main' && this.agent.learningEngine && new b.ReviewDraftSkillsTool(this.agent.learningEngine),
         this.agent.type === 'main' && this.agent.learningEngine && new b.PromoteDraftSkillTool(this.agent.learningEngine),
+        this.agent.type === 'main' && this.agent.homedir && new b.ReadReflectionsTool(this.agent.homedir),
         this.agent.hooks && new b.RegisterHookTool(this.agent.hooks),
         this.agent.hooks && new b.ListHooksTool(this.agent.hooks),
         this.agent.hooks && new b.RemoveHookTool(this.agent.hooks),

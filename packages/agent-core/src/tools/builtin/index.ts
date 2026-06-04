@@ -15,6 +15,7 @@ export * from './collaboration/hook-management';
 export * from './learning/learn-from-session';
 export * from './learning/review-draft-skills';
 export * from './learning/promote-draft-skill';
+export * from './learning/read-reflections';
 export * from './collaboration/list-shared-state';
 export * from './collaboration/read-shared-state';
 export * from './collaboration/receive-message';
