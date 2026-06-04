@@ -761,6 +761,7 @@ export class TurnFlow {
         properties['error_type'] = errorType;
       }
       this.agent.telemetry.track('tool_call', properties);
+      this.agent.onToolExecuted?.(started.name, outcome === 'error', Date.now() - started.startedAt);
     }
   }
 

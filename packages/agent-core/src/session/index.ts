@@ -1,3 +1,4 @@
+import { appendFile, mkdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'pathe';
 import type { Kaos } from '@moonshot-ai/kaos';
@@ -18,6 +19,7 @@ import { SessionMessageBus } from './message-bus';
 import { SessionSharedStore } from './shared-store';
 import { SessionTaskRegistry } from './task-registry';
 import { SessionFileLock } from './file-lock';
+import { SessionOutcomeTracker } from './outcome-tracker';
 import type { PermissionManagerOptions, PermissionRule } from '../agent/permission';
 import { parseBooleanEnv, resolveConfigValue, type BackgroundConfig } from '../config';
 import { makeErrorPayload } from '../errors';
@@ -124,6 +126,7 @@ export class Session {
   readonly healthMonitor: SessionHealthMonitor;
   readonly taskRegistry: SessionTaskRegistry;
   readonly fileLock: SessionFileLock;
+  readonly outcomeTracker: SessionOutcomeTracker;
   private readonly logHandle: SessionLogHandle | undefined;
   readonly hookEngine: HookEngine;
   readonly goals: SessionGoalStore;
@@ -160,6 +163,7 @@ export class Session {
     this.healthMonitor = new SessionHealthMonitor();
     this.taskRegistry = new SessionTaskRegistry();
     this.fileLock = new SessionFileLock();
+    this.outcomeTracker = new SessionOutcomeTracker();
     this.rpc = options.rpc;
     this.hookEngine = new HookEngine(options.hooks, {
       cwd: options.kaos.getcwd(),
@@ -506,6 +510,7 @@ export class Session {
       costTracker: this.costTracker,
       subagentCache: this.subagentCache,
       healthMonitor: this.healthMonitor,
+      outcomeTracker: this.outcomeTracker,
       taskRegistry: this.taskRegistry,
       fileLock: this.fileLock,
       onUsageRecorded: (model, usage) => {
@@ -514,6 +519,13 @@ export class Session {
       },
       onTurnEnded: (turnId, durationMs, steps, failed) => {
         this.healthMonitor.recordTurn(durationMs, steps, failed);
+        this.outcomeTracker.recordTurn(turnId, steps, 'completed', failed, durationMs);
+      },
+      onToolExecuted: (toolName, isError, durationMs) => {
+        this.outcomeTracker.recordTool(toolName, isError, durationMs);
+      },
+      onSubagentCompleted: (profileName, isError, options) => {
+        this.outcomeTracker.recordSubagent(profileName, isError, options);
       },
     });
   }
@@ -628,6 +640,18 @@ export class Session {
       matcherValue: reason,
       inputData: { reason },
     });
+
+    // Write reflection to memory for circular learning
+    try {
+      const reflection = this.outcomeTracker.generateReflection();
+      if (reflection.length > 0) {
+        const memoryDir = join(this.options.homedir, '.omk', 'memory');
+        await mkdir(memoryDir, { recursive: true });
+        await appendFile(join(memoryDir, 'reflections.md'), reflection + '\n\n', 'utf-8');
+      }
+    } catch {
+      // Silently ignore reflection write failures
+    }
   }
 }
 

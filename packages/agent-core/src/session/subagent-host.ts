@@ -364,6 +364,10 @@ export class SessionSubagentHost {
         contextTokens: child.context.tokenCount,
       });
       this.triggerSubagentStop(parent, profileName, result);
+      parent.onSubagentCompleted?.(profileName, false, {
+        tokenUsage: usage ? { input: usage.inputOther + usage.inputCacheRead + usage.inputCacheCreation, output: usage.output } : undefined,
+        durationMs: Date.now() - startTime,
+      });
       return { result, usage, changes };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -378,6 +382,9 @@ export class SessionSubagentHost {
         subagentId: childId,
         parentToolCallId: options.parentToolCallId,
         error: message,
+      });
+      parent.onSubagentCompleted?.(profileName, true, {
+        durationMs: Date.now() - startTime,
       });
       throw error;
     }

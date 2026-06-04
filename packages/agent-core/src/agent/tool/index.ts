@@ -447,6 +447,7 @@ export class ToolManager {
         this.agent.type === 'main' && this.agent.costTracker && new b.SetCostBudgetTool(this.agent.costTracker),
         this.agent.type === 'main' && this.agent.costTracker && new b.GetCostStatusTool(this.agent.costTracker),
         this.agent.type === 'main' && this.agent.healthMonitor && new b.GetSessionHealthTool(this.agent.healthMonitor),
+        this.agent.type === 'main' && this.agent.outcomeTracker && new b.GetPerformanceReportTool(this.agent.outcomeTracker),
         this.agent.hooks && new b.RegisterHookTool(this.agent.hooks),
         this.agent.hooks && new b.ListHooksTool(this.agent.hooks),
         this.agent.hooks && new b.RemoveHookTool(this.agent.hooks),

@@ -42,6 +42,7 @@ tools:
   - SetCostBudget
   - GetCostStatus
   - GetSessionHealth
+  - GetPerformanceReport
   - RegisterHook
   - ListHooks
   - RemoveHook

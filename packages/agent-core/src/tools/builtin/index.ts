@@ -10,6 +10,7 @@ export * from './collaboration/ask-user';
 export * from './collaboration/file-lock';
 export * from './collaboration/get-cost-status';
 export * from './collaboration/get-session-health';
+export * from './collaboration/get-performance-report';
 export * from './collaboration/hook-management';
 export * from './collaboration/list-shared-state';
 export * from './collaboration/read-shared-state';

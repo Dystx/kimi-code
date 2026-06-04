@@ -101,11 +101,27 @@ export interface AgentOptions {
   readonly costTracker?: SessionCostTracker | undefined;
   readonly subagentCache?: SubagentResultCache | undefined;
   readonly healthMonitor?: import('../session/health-monitor').SessionHealthMonitor;
+  readonly outcomeTracker?: import('../session/outcome-tracker').SessionOutcomeTracker;
   readonly taskRegistry?: import('../session/task-registry').SessionTaskRegistry;
   readonly fileLock?: import('../session/file-lock').SessionFileLock;
   readonly onUsageRecorded?: UsageRecordCallback | undefined;
   readonly onTurnEnded?:
     | ((turnId: number, durationMs: number, steps: number, failed: boolean) => void)
+    | undefined;
+  readonly onToolExecuted?:
+    | ((toolName: string, isError: boolean, durationMs?: number) => void)
+    | undefined;
+  readonly onSubagentCompleted?:
+    | ((
+        profileName: string,
+        isError: boolean,
+        options: {
+          tokenUsage?: { input: number; output: number };
+          durationMs?: number;
+          fallbackUsed?: boolean;
+          cached?: boolean;
+        },
+      ) => void)
     | undefined;
 }
 
@@ -131,10 +147,26 @@ export class Agent {
   readonly costTracker?: SessionCostTracker;
   readonly subagentCache?: SubagentResultCache;
   readonly healthMonitor?: import('../session/health-monitor').SessionHealthMonitor;
+  readonly outcomeTracker?: import('../session/outcome-tracker').SessionOutcomeTracker;
   readonly taskRegistry?: import('../session/task-registry').SessionTaskRegistry;
   readonly fileLock?: import('../session/file-lock').SessionFileLock;
   readonly onTurnEnded?:
     | ((turnId: number, durationMs: number, steps: number, failed: boolean) => void)
+    | undefined;
+  readonly onToolExecuted?:
+    | ((toolName: string, isError: boolean, durationMs?: number) => void)
+    | undefined;
+  readonly onSubagentCompleted?:
+    | ((
+        profileName: string,
+        isError: boolean,
+        options: {
+          tokenUsage?: { input: number; output: number };
+          durationMs?: number;
+          fallbackUsed?: boolean;
+          cached?: boolean;
+        },
+      ) => void)
     | undefined;
 
   readonly blobStore: BlobStore | undefined;
@@ -177,9 +209,12 @@ export class Agent {
     this.costTracker = options.costTracker;
     this.subagentCache = options.subagentCache;
     this.healthMonitor = options.healthMonitor;
+    this.outcomeTracker = options.outcomeTracker;
     this.taskRegistry = options.taskRegistry;
     this.fileLock = options.fileLock;
     this.onTurnEnded = options.onTurnEnded;
+    this.onToolExecuted = options.onToolExecuted;
+    this.onSubagentCompleted = options.onSubagentCompleted;
     this.log = options.log ?? log;
     this.telemetry = options.telemetry ?? noopTelemetryClient;
 
