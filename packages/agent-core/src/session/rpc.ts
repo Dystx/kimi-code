@@ -148,8 +148,8 @@ export class SessionAPIImpl implements PromisableMethods<SessionAPI> {
   }
 
   private assertGoalCommandEnabled(): void {
-    if (flags.enabled('goal-command')) return;
-    throw new KimiError(ErrorCodes.NOT_IMPLEMENTED, 'Goal command is disabled');
+    // Goal command is now always enabled.
+    return;
   }
 
   async prompt({ agentId, ...payload }: AgentScopedPayload<PromptPayload>) {

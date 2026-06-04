@@ -19,7 +19,6 @@ import type { BuiltinTool } from '../../../agent/tool';
 import { ErrorCodes, KimiError } from '../../../errors';
 import { errorMessage, isAbortError } from '../../../loop/errors';
 import type { ExecutableToolContext, ExecutableToolResult, ToolExecution } from '../../../loop/types';
-import { flags } from '../../../flags';
 import type {
   QuestionAnswers,
   QuestionAnswerMethod,
@@ -86,9 +85,7 @@ const AskUserQuestionInputSchemaWithBackground = AskUserQuestionInputBaseSchema.
 });
 
 export const AskUserQuestionInputSchema: z.ZodType<AskUserQuestionInput> =
-  flags.enabled('background-ask')
-    ? AskUserQuestionInputSchemaWithBackground
-    : AskUserQuestionInputBaseSchema;
+  AskUserQuestionInputSchemaWithBackground;
 
 const QUESTION_DISMISSED_MESSAGE = 'User dismissed the question without answering.';
 
@@ -99,15 +96,14 @@ const QUESTION_UNSUPPORTED_FAILURE_MESSAGE =
 
 export class AskUserQuestionTool implements BuiltinTool<AskUserQuestionInput> {
   readonly name = 'AskUserQuestion' as const;
-  readonly description: string = flags.enabled('background-ask')
-    ? `${DESCRIPTION}- Set background=true when you can keep working without the answer. This starts a background question task and returns a task_id immediately. The answer arrives automatically in a later turn — you do not need to poll, sleep, or check on it. Continue with other work; never fabricate or predict the answer.`
-    : DESCRIPTION;
+  readonly description: string =
+    `${DESCRIPTION}- Set background=true when you can keep working without the answer. This starts a background question task and returns a task_id immediately. The answer arrives automatically in a later turn — you do not need to poll, sleep, or check on it. Continue with other work; never fabricate or predict the answer.`;
   readonly parameters: Record<string, unknown> = toInputJsonSchema(AskUserQuestionInputSchema);
 
   constructor(private readonly agent: Agent) {}
 
   resolveExecution(args: AskUserQuestionInput): ToolExecution {
-    const isBackground = args.background === true && flags.enabled('background-ask');
+    const isBackground = args.background === true;
     return {
       description: isBackground
         ? `Starting background question: ${questionDescription(args.questions)}`
@@ -125,7 +121,7 @@ export class AskUserQuestionTool implements BuiltinTool<AskUserQuestionInput> {
       turnId,
     }: ExecutableToolContext,
   ): Promise<ExecutableToolResult> {
-    if (args.background === true && flags.enabled('background-ask')) {
+    if (args.background === true) {
       return this.executeInBackground(args, { toolCallId, turnId, signal });
     }
 

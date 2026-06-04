@@ -25,8 +25,7 @@ export class InjectionManager {
       new PlanTrackerInjector(agent),
       new PermissionModeInjector(agent),
     ];
-    this.goalInjector =
-      flags.enabled('goal-command') && agent.type === 'main' ? new GoalInjector(agent) : null;
+    this.goalInjector = agent.type === 'main' ? new GoalInjector(agent) : null;
   }
 
   async inject(): Promise<void> {

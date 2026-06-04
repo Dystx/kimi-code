@@ -54,10 +54,10 @@ describe('SessionOutcomeTracker', () => {
     tracker.recordTool('Write', false);
 
     const snap = tracker.snapshot(60 * 60 * 1000);
-    expect(snap.topTools[0].name).toBe('Read');
-    expect(snap.topTools[0].count).toBe(2);
-    expect(snap.topTools[1].name).toBe('Write');
-    expect(snap.topTools[1].count).toBe(1);
+    expect(snap.topTools[0]!.name).toBe('Read');
+    expect(snap.topTools[0]!.count).toBe(2);
+    expect(snap.topTools[1]!.name).toBe('Write');
+    expect(snap.topTools[1]!.count).toBe(1);
   });
 
   it('caps outcomes at MAX_OUTCOMES', () => {

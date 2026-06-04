@@ -45,7 +45,6 @@ export class MicroCompaction {
   }
 
   detect(): void {
-    if (!flags.enabled('micro-compaction')) return;
 
     const config = this.config;
     const { history, lastAssistantAt } = this.agent.context;
@@ -78,8 +77,6 @@ export class MicroCompaction {
   }
 
   compact(messages: readonly ContextMessage[]): readonly ContextMessage[] {
-    if (!flags.enabled('micro-compaction')) return messages;
-
     const config = this.config;
     const result: ContextMessage[] = [];
     let i = 0;

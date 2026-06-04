@@ -110,7 +110,7 @@ export class TurnFlow {
 
   /** Whether goal-mode runtime behavior (continuation, abnormal-end marking) applies. */
   private get goalRuntimeEnabled(): boolean {
-    return flags.enabled('goal-command') && this.agent.type === 'main';
+    return this.agent.type === 'main';
   }
 
   // Returns the new turnId, or null if the turn was marked as resuming.

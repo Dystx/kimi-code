@@ -83,7 +83,8 @@ describe('Plan tracking integration', () => {
 
     const tool = new GetPlanStatusTool(planFile);
     const exec = tool.resolveExecution({});
-    const result = await exec.execute();
+    if (exec.isError === true) throw new Error('Expected success');
+    const result = await exec.execute({ signal: new AbortController().signal, turnId: '0', toolCallId: 'call_1' });
 
     expect(result.output).toContain('Integration Test Plan');
     expect(result.output).toContain('1/3 done');
@@ -97,7 +98,8 @@ describe('Plan tracking integration', () => {
   it('GetPlanStatusTool handles missing file gracefully', async () => {
     const tool = new GetPlanStatusTool(join(tmpDir, 'nonexistent.json'));
     const exec = tool.resolveExecution({});
-    const result = await exec.execute();
+    if (exec.isError === true) throw new Error('Expected success');
+    const result = await exec.execute({ signal: new AbortController().signal, turnId: '0', toolCallId: 'call_1' });
 
     expect(result.output).toContain('No plan tracker file found');
   });
@@ -108,7 +110,8 @@ describe('Plan tracking integration', () => {
 
     const tool = new GetPlanStatusTool(planFile);
     const exec = tool.resolveExecution({});
-    const result = await exec.execute();
+    if (exec.isError === true) throw new Error('Expected success');
+    const result = await exec.execute({ signal: new AbortController().signal, turnId: '0', toolCallId: 'call_1' });
 
     expect(result.output).toContain('Error reading plan');
   });
@@ -119,7 +122,7 @@ describe('Plan tracking integration', () => {
     const planTracker = new PlanTracker(agent, planFile);
 
     await planTracker.initializeFromPlan('- [ ] A\n- [ ] B\n', 'Plan');
-    planTracker.updateTaskStatus(planTracker.data!.tasks[0].id, 'done');
+    planTracker.updateTaskStatus(planTracker.data!.tasks[0]!.id, 'done');
 
     const reflection = tracker.generateReflection();
     expect(reflection).toContain('Plan tasks:');

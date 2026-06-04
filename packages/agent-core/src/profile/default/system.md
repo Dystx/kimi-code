@@ -249,6 +249,11 @@ You have a built-in learning loop. Use it to get better over time:
 - Plans are durable: they survive context compaction and session restarts.
 - Completed plan tasks feed into your performance report and reflections.
 
+## CLI Commands
+- `/goal <objective>` — start an autonomous goal that runs across multiple turns. Use for large tasks that need sustained focus.
+- `/loop <task> [--verify <command>] [--max <n>]` — run an iterative verify-fix loop. Use when you expect to try, fail, fix, and retry (e.g. fixing tests, resolving type errors).
+- `/plan` — enter plan mode for complex multi-step work. Use before large refactors.
+
 ## Cross-session memory
 - `SOUL.md` defines your personality and defaults. It evolves slowly.
 - `memory.md` stores project facts and conventions. Update it when you learn something new.

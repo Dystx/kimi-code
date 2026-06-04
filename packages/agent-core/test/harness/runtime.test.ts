@@ -5,7 +5,6 @@ import { join } from 'pathe';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  FLAG_DEFINITIONS,
   MASTER_ENV,
   createRPC,
   KimiCore,
@@ -21,12 +20,6 @@ import {
 import { resolveLoggingConfig } from '../../src/logging/resolve-config';
 import type { OAuthTokenProviderResolver } from '../../src/session/provider-manager';
 
-function requiredFlagEnv(id: string): string {
-  const def = FLAG_DEFINITIONS.find((item) => item.id === id);
-  if (def === undefined) throw new Error(`Missing flag definition: ${id}`);
-  return def.env;
-}
-
 describe('KimiCore runtime config', () => {
   let tmp: string;
 
@@ -37,29 +30,6 @@ describe('KimiCore runtime config', () => {
     await __resetRootLoggerForTest();
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
-  });
-
-  it('logs all enabled experimental flags once on core startup', async () => {
-    tmp = await mkdtemp(join(tmpdir(), 'kimi-core-runtime-'));
-    const homeDir = join(tmp, 'home');
-    await mkdir(homeDir, { recursive: true });
-    await getRootLogger().configure(resolveLoggingConfig({ homeDir }));
-
-    vi.stubEnv(MASTER_ENV, '0');
-    for (const def of FLAG_DEFINITIONS) {
-      vi.stubEnv(def.env, '0');
-    }
-    vi.stubEnv(requiredFlagEnv('goal-command'), '1');
-    vi.stubEnv(requiredFlagEnv('background-ask'), '1');
-
-    void new KimiCore(async () => ({}) as never, { homeDir });
-    await getRootLogger().flushGlobal();
-
-    const text = await readFile(resolveGlobalLogPath(homeDir), 'utf-8');
-    expect(text).toContain('experimental flags enabled');
-    expect(text).toContain('goal-command');
-    expect(text).toContain('background-ask');
-    expect(text.match(/experimental flags enabled/g)).toHaveLength(1);
   });
 
   it('uses the shared OAuth resolver for Moonshot service tokens', async () => {

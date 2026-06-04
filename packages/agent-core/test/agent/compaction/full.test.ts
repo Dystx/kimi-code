@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AgentOptions } from '../../../src/agent';
 import { DefaultCompactionStrategy, type CompactionStrategy } from '../../../src/agent/compaction';
-import { FLAG_DEFINITIONS, MASTER_ENV } from '../../../src/flags';
+import { MASTER_ENV } from '../../../src/flags';
 import { HookEngine, type HookEngineTriggerArgs } from '../../../src/session/hooks';
 import { estimateTokensForMessages } from '../../../src/utils/tokens';
 import { recordingTelemetry, type TelemetryRecord } from '../../fixtures/telemetry';
@@ -1714,11 +1714,7 @@ function enableMicroCompactionFlag(): void {
 }
 
 function getMicroCompactionFlagEnv(): string {
-  const flag = FLAG_DEFINITIONS.find((definition) => definition.id === 'micro-compaction');
-  if (flag === undefined) {
-    throw new Error('Missing micro-compaction flag definition.');
-  }
-  return flag.env;
+  return 'KIMI_CODE_EXPERIMENTAL_MICRO_COMPACTION';
 }
 
 function deferred<T>() {

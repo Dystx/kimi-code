@@ -222,33 +222,6 @@ describe('AskUserQuestionTool', () => {
     });
   });
 
-  it('downgrades background=true to an inline question when the experimental flag is off', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_BACKGROUND_ASK', '0');
-
-    const { manager } = createBackgroundManager();
-    const requestQuestion = vi.fn(async () => ({ Postgres: true }));
-    const agent = {
-      rpc: { requestQuestion },
-      telemetry: { track: vi.fn() },
-      background: manager,
-    } as unknown as Agent;
-    const tool = new AskUserQuestionTool(agent);
-    expect(tool.description).not.toContain('Set background=true');
-
-    const result = await executeTool(tool, {
-      turnId: '0',
-      toolCallId: 'call_bg_disabled',
-      args: { ...input(), background: true },
-      signal,
-    });
-
-    expect(result.isError).toBe(false);
-    expect(result.output).toBe(JSON.stringify({ answers: { Postgres: true } }));
-    expect(requestQuestion).toHaveBeenCalled();
-    expect(manager.list()).toHaveLength(0);
-  });
-
   it('returns a dismissed message when every question is dismissed', async () => {
     const { tool, telemetryTrack } = makeTool({ requestQuestion: async () => null });
 

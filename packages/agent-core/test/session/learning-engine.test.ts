@@ -55,8 +55,8 @@ describe('SessionLearningEngine', () => {
 
     const report = await engine.analyze();
     expect(report.draftSkills.length).toBeGreaterThan(0);
-    expect(report.draftSkills[0].confidence).toBe('high');
-    expect(report.draftSkills[0].name).toContain('Read');
+    expect(report.draftSkills[0]!.confidence).toBe('high');
+    expect(report.draftSkills[0]!.name).toContain('Read');
   });
 
   it('writes draft skills to disk', async () => {
@@ -67,7 +67,7 @@ describe('SessionLearningEngine', () => {
 
     const drafts = await engine.listDrafts();
     expect(drafts.length).toBeGreaterThan(0);
-    expect(drafts[0].body).toContain('When using');
+    expect(drafts[0]!.body).toContain('When using');
   });
 
   it('promotes a draft to active skill', async () => {
@@ -79,7 +79,7 @@ describe('SessionLearningEngine', () => {
     const drafts = await engine.listDrafts();
     expect(drafts.length).toBeGreaterThan(0);
 
-    const skillPath = await engine.promoteDraft(drafts[0].id, 'read-pattern');
+    const skillPath = await engine.promoteDraft(drafts[0]!.id, 'read-pattern');
     expect(skillPath).toContain('skills/read-pattern/SKILL.md');
 
     const content = await readFile(skillPath, 'utf-8');
@@ -106,7 +106,7 @@ describe('SessionLearningEngine', () => {
 
     const drafts = await engine.listDrafts();
     expect(drafts.length).toBeGreaterThan(0);
-    expect(drafts[0].name.length).toBeGreaterThan(0);
-    expect(drafts[0].description.length).toBeGreaterThan(0);
+    expect(drafts[0]!.name.length).toBeGreaterThan(0);
+    expect(drafts[0]!.description.length).toBeGreaterThan(0);
   });
 });

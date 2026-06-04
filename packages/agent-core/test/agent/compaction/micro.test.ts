@@ -6,7 +6,7 @@ import {
   AGENT_WIRE_PROTOCOL_VERSION,
   InMemoryAgentRecordPersistence,
 } from '../../../src/agent/records';
-import { FLAG_DEFINITIONS, MASTER_ENV } from '../../../src/flags';
+import { MASTER_ENV } from '../../../src/flags';
 import { estimateTokensForMessages } from '../../../src/utils/tokens';
 import { recordingTelemetry, type TelemetryRecord } from '../../fixtures/telemetry';
 import { testAgent, type TestAgentContext } from '../harness/agent';
@@ -485,8 +485,7 @@ describe('MicroCompaction', () => {
     expect(records.filter((record) => record.event === 'micro_compaction_applied')).toHaveLength(1);
   });
 
-  it('leaves context unchanged when the micro-compaction flag is disabled', () => {
-    vi.stubEnv(MICRO_COMPACTION_FLAG_ENV, '0');
+  it('applies micro-compaction by default (feature is stable)', async () => {
     vi.useFakeTimers();
     const persistence = new InMemoryAgentRecordPersistence();
     const ctx = testAgent({
@@ -494,17 +493,25 @@ describe('MicroCompaction', () => {
         keepRecentMessages: 0,
         minContentTokens: 1,
         cacheMissedThresholdMs: 60 * MINUTE,
+        minContextUsageRatio: 0,
       },
       persistence,
+    });
+    ctx.configure({
+      provider: CATALOGUED_PROVIDER,
+      modelCapabilities: CATALOGUED_MODEL_CAPABILITIES,
     });
 
     vi.setSystemTime(0);
     appendMicroToolExchange(ctx, 1, { output: 'result one' });
 
     vi.setSystemTime(61 * MINUTE);
+    // Force a turn to trigger detect().
+    ctx.mockNextResponse({ type: 'text', text: 'done' });
+    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'next' }] });
+    await ctx.untilTurnEnd();
 
-    expect(toolTexts(ctx.agent.context.messages)).toEqual(['result one']);
-    expect(lastMicroCompactionCutoff(persistence.records)).toBeUndefined();
+    expect(lastMicroCompactionCutoff(persistence.records)).toBeDefined();
   });
 
   it('uses the custom marker at the minContentTokens boundary', () => {
@@ -907,11 +914,7 @@ function hasMarker(messages: readonly Message[]): boolean {
 }
 
 function getMicroCompactionFlagEnv(): string {
-  const flag = FLAG_DEFINITIONS.find((definition) => definition.id === 'micro-compaction');
-  if (flag === undefined) {
-    throw new Error('Missing micro-compaction flag definition.');
-  }
-  return flag.env;
+  return 'KIMI_CODE_EXPERIMENTAL_MICRO_COMPACTION';
 }
 
 function singleTelemetryEvent(

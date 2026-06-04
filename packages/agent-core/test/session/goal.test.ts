@@ -715,14 +715,7 @@ describe('SessionAPIImpl.updateSessionMetadata goal reservation', () => {
   });
 });
 
-describe('SessionAPIImpl goal flag gating', () => {
-  const originalGoalFlag = process.env[GOAL_FLAG];
-
-  afterEach(() => {
-    if (originalGoalFlag === undefined) delete process.env[GOAL_FLAG];
-    else process.env[GOAL_FLAG] = originalGoalFlag;
-  });
-
+describe('SessionAPIImpl goal creation', () => {
   function makeSession(sessionDir: string): Session {
     return new Session({
       id: 'goal-rpc-flag',
@@ -733,24 +726,7 @@ describe('SessionAPIImpl goal flag gating', () => {
     });
   }
 
-  it('rejects SDK goal creation when the flag is disabled', async () => {
-    delete process.env[GOAL_FLAG];
-    const sessionDir = await makeTempDir();
-    const session = makeSession(sessionDir);
-    const api = new SessionAPIImpl(session);
-
-    let thrown: unknown;
-    try {
-      void api.createGoal({ objective: 'work' });
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({ code: ErrorCodes.NOT_IMPLEMENTED });
-    expect(session.goals.getGoal().goal).toBeNull();
-  });
-
-  it('allows SDK goal creation when the flag is enabled', async () => {
-    process.env[GOAL_FLAG] = 'true';
+  it('allows SDK goal creation', async () => {
     const sessionDir = await makeTempDir();
     const session = makeSession(sessionDir);
     const api = new SessionAPIImpl(session);

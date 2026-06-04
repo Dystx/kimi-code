@@ -297,38 +297,21 @@ describe('goal tools are main-agent-only', () => {
 });
 
 describe('ToolManager goal tool registration', () => {
-  const original = process.env[GOAL_FLAG];
-  afterEach(() => {
-    if (original === undefined) delete process.env[GOAL_FLAG];
-    else process.env[GOAL_FLAG] = original;
-  });
-
   function loopToolNames(type: 'main' | 'sub'): readonly string[] {
     const ctxAgent = testAgent({ type });
     // configure() gives the agent a provider so builtin tools can initialize.
     ctxAgent.configure({ tools: ['Read', 'CreateGoal', 'GetGoal', 'SetGoalBudget'] });
-    // Re-run registration so the gate reads the current flag state.
     ctxAgent.agent.tools.initializeBuiltinTools();
     return ctxAgent.agent.tools.loopTools.map((tool) => tool.name);
   }
 
-  it('omits goal tools when the flag is disabled', () => {
-    delete process.env[GOAL_FLAG];
-    const names = loopToolNames('main');
-    expect(names).not.toContain('CreateGoal');
-    expect(names).not.toContain('GetGoal');
-    expect(names).not.toContain('SetGoalBudget');
-  });
-
-  it('exposes goal tools to the main agent when the flag is enabled', () => {
-    process.env[GOAL_FLAG] = 'true';
+  it('exposes goal tools to the main agent', () => {
     const names = loopToolNames('main');
     expect(names).toEqual(expect.arrayContaining(['CreateGoal', 'GetGoal']));
     expect(names).not.toContain('SetGoalBudget');
   });
 
-  it('does not expose goal tools to subagents even when enabled', () => {
-    process.env[GOAL_FLAG] = 'true';
+  it('does not expose goal tools to subagents', () => {
     const names = loopToolNames('sub');
     expect(names).not.toContain('CreateGoal');
     expect(names).not.toContain('GetGoal');
@@ -336,7 +319,6 @@ describe('ToolManager goal tool registration', () => {
   });
 
   it('hides goal mutation tools until a goal exists, then exposes them', async () => {
-    process.env[GOAL_FLAG] = 'true';
     const store = makeStore();
     const ctxAgent = testAgent({ type: 'main', goals: store });
     ctxAgent.configure({ tools: ['Read', 'CreateGoal', 'GetGoal', 'SetGoalBudget', 'UpdateGoal'] });

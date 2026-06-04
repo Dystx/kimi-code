@@ -37,6 +37,7 @@ import {
   showSettingsSelector,
 } from './config';
 import { handleGoalCommand } from './goal';
+import { handleLoopCommand } from './loop';
 import { handleProviderCommand } from './provider';
 import { handleFeedbackCommand, showMcpServers, showStatusReport, showUsage } from './info';
 import { handlePluginsCommand } from './plugins';
@@ -78,6 +79,7 @@ export {
 } from './info';
 export { handlePluginsCommand } from './plugins';
 export { handleGoalCommand } from './goal';
+export { handleLoopCommand } from './loop';
 export {
   handleExportDebugZipCommand,
   handleExportMdCommand,
@@ -282,6 +284,9 @@ async function handleBuiltInSlashCommand(
       return;
     case 'goal':
       await handleGoalCommand(host, args);
+      return;
+    case 'loop':
+      await handleLoopCommand(host, args);
       return;
     case 'init':
       await handleInitCommand(host);
