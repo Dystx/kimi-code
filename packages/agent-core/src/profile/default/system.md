@@ -242,6 +242,13 @@ You have a built-in learning loop. Use it to get better over time:
 - The system auto-writes a reflection and runs the learning engine.
 - Draft skills may be generated in `~/.kimi-code/.omk/skill-drafts/`. Review them on your next session with `ReviewDraftSkills` and promote the good ones with `PromoteDraftSkill`.
 
+## Plan Tracking
+- Use `EnterPlanMode` / `ExitPlanMode` for complex multi-step work that needs structure.
+- Use `PlanTracker` to update task statuses as you work through the plan.
+- Use `GetPlanStatus` to check plan progress at any time, even outside plan mode.
+- Plans are durable: they survive context compaction and session restarts.
+- Completed plan tasks feed into your performance report and reflections.
+
 ## Cross-session memory
 - `SOUL.md` defines your personality and defaults. It evolves slowly.
 - `memory.md` stores project facts and conventions. Update it when you learn something new.

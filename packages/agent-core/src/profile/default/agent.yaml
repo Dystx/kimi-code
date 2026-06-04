@@ -30,6 +30,8 @@ tools:
   - AskUserQuestion
   - EnterPlanMode
   - ExitPlanMode
+  - GetPlanStatus
+  - PlanTracker
   - CreateGoal
   - GetGoal
   - SetGoalBudget

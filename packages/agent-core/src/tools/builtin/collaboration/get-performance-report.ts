@@ -67,6 +67,10 @@ export class GetPerformanceReportTool implements BuiltinTool<GetPerformanceRepor
       `  Total turns: ${snap.totalTurns}`,
       `  Failed: ${snap.turnErrors}`,
       '',
+      'Plan Tasks:',
+      `  Total: ${snap.totalPlanTasks}`,
+      `  Completed: ${snap.completedPlanTasks}`,
+      '',
     ];
 
     if (snap.topTools.length > 0) {

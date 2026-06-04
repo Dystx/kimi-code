@@ -47,6 +47,10 @@ export class PlanTracker {
     return this._data;
   }
 
+  get planFilePath(): string {
+    return this.filePath;
+  }
+
   get isActive(): boolean {
     return this._data !== null;
   }
@@ -119,6 +123,11 @@ export class PlanTracker {
       t.id === taskId ? { ...t, status } : t,
     );
     this._data = { ...this._data, tasks: updatedTasks };
+
+    // Record plan task completion in outcome tracker for learning.
+    if (status === 'done' || status === 'skipped') {
+      this.agent.outcomeTracker?.recordPlanTask(task.title, this._data.id, status === 'done');
+    }
 
     // Auto-advance current task when a task is marked done.
     if (status === 'done' && this._data.currentTaskId === taskId) {

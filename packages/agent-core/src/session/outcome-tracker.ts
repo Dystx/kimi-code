@@ -35,6 +35,13 @@ export interface TurnOutcome {
   readonly timestamp: number;
 }
 
+export interface PlanTaskOutcome {
+  readonly taskTitle: string;
+  readonly planId: string;
+  readonly completed: boolean;
+  readonly timestamp: number;
+}
+
 export interface PerformanceSnapshot {
   readonly totalToolCalls: number;
   readonly toolErrors: number;
@@ -46,6 +53,8 @@ export interface PerformanceSnapshot {
   readonly turnErrors: number;
   readonly topTools: Array<{ name: string; count: number; errorRate: number }>;
   readonly topSubagents: Array<{ name: string; count: number; errorRate: number }>;
+  readonly totalPlanTasks: number;
+  readonly completedPlanTasks: number;
   readonly windowMinutes: number;
 }
 
@@ -56,6 +65,7 @@ export class SessionOutcomeTracker {
   private toolOutcomes: ToolOutcome[] = [];
   private subagentOutcomes: SubagentOutcome[] = [];
   private turnOutcomes: TurnOutcome[] = [];
+  private planTaskOutcomes: PlanTaskOutcome[] = [];
 
   recordTool(toolName: string, isError: boolean, durationMs?: number): void {
     this.toolOutcomes.push({ toolName, isError, timestamp: Date.now(), durationMs });
@@ -95,6 +105,13 @@ export class SessionOutcomeTracker {
     }
   }
 
+  recordPlanTask(taskTitle: string, planId: string, completed: boolean): void {
+    this.planTaskOutcomes.push({ taskTitle, planId, completed, timestamp: Date.now() });
+    if (this.planTaskOutcomes.length > MAX_OUTCOMES) {
+      this.planTaskOutcomes.shift();
+    }
+  }
+
   snapshot(windowMs = DEFAULT_WINDOW_MS): PerformanceSnapshot {
     const now = Date.now();
     const cutoff = now - windowMs;
@@ -102,6 +119,7 @@ export class SessionOutcomeTracker {
     const recentTools = this.toolOutcomes.filter((o) => o.timestamp >= cutoff);
     const recentSubagents = this.subagentOutcomes.filter((o) => o.timestamp >= cutoff);
     const recentTurns = this.turnOutcomes.filter((o) => o.timestamp >= cutoff);
+    const recentPlanTasks = this.planTaskOutcomes.filter((o) => o.timestamp >= cutoff);
 
     const toolErrors = recentTools.filter((o) => o.isError).length;
     const subagentErrors = recentSubagents.filter((o) => o.isError).length;
@@ -121,6 +139,8 @@ export class SessionOutcomeTracker {
       turnErrors,
       topTools,
       topSubagents,
+      totalPlanTasks: recentPlanTasks.length,
+      completedPlanTasks: recentPlanTasks.filter((o) => o.completed).length,
       windowMinutes: windowMs / 60000,
     };
   }
@@ -134,6 +154,7 @@ export class SessionOutcomeTracker {
     lines.push(`- Tool calls: ${snap.totalToolCalls} (${snap.toolErrors} errors, ${Math.round(snap.toolSuccessRate * 100)}% success)`);
     lines.push(`- Subagents: ${snap.totalSubagents} (${snap.subagentErrors} errors, ${Math.round(snap.subagentSuccessRate * 100)}% success)`);
     lines.push(`- Turns: ${snap.totalTurns} (${snap.turnErrors} failed)`);
+    lines.push(`- Plan tasks: ${snap.totalPlanTasks} (${snap.completedPlanTasks} completed)`);
     lines.push('');
 
     if (snap.topTools.length > 0) {

@@ -396,6 +396,7 @@ export class ToolManager {
           new b.RollbackTool(kaos, join(this.agent.homedir, 'checkpoints')),
         new b.EnterPlanModeTool(this.agent),
         new b.ExitPlanModeTool(this.agent),
+        new b.GetPlanStatusTool(this.agent.planTracker?.planFilePath ?? ''),
         new b.PlanTrackerTool(this.agent),
         // Goal tools are main-agent-only and gated by the goal-command flag.
         flags.enabled('goal-command') &&
