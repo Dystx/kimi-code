@@ -51,6 +51,9 @@ import { noopTelemetryClient, type TelemetryClient } from '../telemetry';
 import { SessionSubagentHost } from './subagent-host';
 import type { ToolServices } from '../tools/support/services';
 import { FlagResolver, type ExperimentalFlagResolver } from '../flags';
+import type { SessionStatusSnapshot } from './status';
+
+export type { SessionStatusSnapshot } from './status';
 
 export interface SessionOptions {
   readonly kaos: Kaos;
@@ -146,6 +149,8 @@ export class Session {
     custom: {},
   };
   private writeMetadataPromise = Promise.resolve();
+  private loopState: { task: string; iteration: number; maxIterations: number; startTime: number } | null = null;
+  private emitStatusTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(public readonly options: SessionOptions) {
     // Attach the per-session log sink up front so the constructor's
@@ -559,16 +564,20 @@ export class Session {
         if (budgetAlert.level === 'warn' && budgetAlert.message !== undefined) {
           this.log.warn(budgetAlert.message);
         }
+        this.scheduleEmitStatus();
       },
       onTurnEnded: (turnId, durationMs, steps, failed) => {
         this.healthMonitor.recordTurn(durationMs, steps, failed);
         this.outcomeTracker.recordTurn(turnId, steps, 'completed', failed, durationMs);
+        this.scheduleEmitStatus();
       },
       onToolExecuted: (toolName, isError, durationMs) => {
         this.outcomeTracker.recordTool(toolName, isError, durationMs);
+        this.scheduleEmitStatus();
       },
       onSubagentCompleted: (profileName, isError, options) => {
         this.outcomeTracker.recordSubagent(profileName, isError, options);
+        this.scheduleEmitStatus();
       },
       experimentalFlags: this.experimentalFlags,
     });
@@ -706,6 +715,91 @@ export class Session {
     } catch {
       // Silently ignore learning failures
     }
+  }
+
+  // ── Loop state ────────────────────────────────────────────────────────────
+
+  startLoop(task: string, maxIterations: number): void {
+    this.loopState = { task, iteration: 1, maxIterations, startTime: Date.now() };
+    this.scheduleEmitStatus();
+  }
+
+  incrementLoop(): void {
+    if (this.loopState !== null) {
+      this.loopState.iteration++;
+      this.scheduleEmitStatus();
+    }
+  }
+
+  stopLoop(): void {
+    this.loopState = null;
+    this.scheduleEmitStatus();
+  }
+
+  getLoopState(): { task: string; iteration: number; maxIterations: number; startTime: number } | null {
+    return this.loopState;
+  }
+
+  // ── Status snapshot ───────────────────────────────────────────────────────
+
+  getStatusSnapshot(): SessionStatusSnapshot {
+    const mainAgent = this.getReadyAgent('main');
+    const taskSnap = this.taskRegistry.snapshot();
+    const health = this.healthMonitor.snapshot();
+    const cost = this.costTracker.status();
+
+    let contextTokens = 0;
+    let maxContextTokens = 0;
+    let contextUsage = 0;
+    if (mainAgent !== undefined) {
+      contextTokens = mainAgent.context.tokenCount;
+      maxContextTokens = mainAgent.config.modelCapabilities.max_context_tokens ?? 0;
+      contextUsage = maxContextTokens > 0 ? contextTokens / maxContextTokens : 0;
+    }
+
+    return {
+      goal: this.goals.getGoal().goal,
+      queuedGoals: 0,
+      tasks: {
+        total: taskSnap.total,
+        pending: taskSnap.byStatus.pending + taskSnap.byStatus.in_progress,
+        done: taskSnap.byStatus.completed,
+        blocked: taskSnap.byStatus.blocked,
+      },
+      plan: null, // TODO: wire PlanTracker when available in session
+      loop: this.loopState,
+      locks: this.fileLock.list().length,
+      health: health !== null ? {
+        tokenBurnRate: health.tokenBurnRatePerMin,
+        avgTurnDuration: health.avgTurnDurationMs,
+        errorRate: health.errorRate,
+      } : null,
+      cost: cost !== null ? {
+        totalDollars: cost.totalDollars,
+        budgetRemaining: cost.remainingDollars,
+        fractionUsed: cost.fractionUsed,
+      } : null,
+      backgroundTasks: mainAgent?.background.list(true).length ?? 0,
+      subagents: mainAgent?.subagentHost?.getStatuses().size ?? 0,
+      hooks: mainAgent?.hooks?.list().length ?? 0,
+      contextUsage,
+      contextTokens,
+      maxContextTokens,
+    };
+  }
+
+  scheduleEmitStatus(): void {
+    if (this.emitStatusTimer !== undefined) {
+      clearTimeout(this.emitStatusTimer);
+    }
+    this.emitStatusTimer = setTimeout(() => {
+      this.emitStatusTimer = undefined;
+      void this.rpc.emitEvent({
+        type: 'session.status',
+        agentId: 'main',
+        snapshot: this.getStatusSnapshot(),
+      });
+    }, 250);
   }
 }
 

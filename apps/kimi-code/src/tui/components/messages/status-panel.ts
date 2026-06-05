@@ -5,7 +5,7 @@
  * separate from the TUI orchestration layer.
  */
 
-import type { ModelAlias, PermissionMode, SessionStatus } from '@moonshot-ai/kimi-code-sdk';
+import type { ModelAlias, PermissionMode, SessionStatus, SessionStatusSnapshot } from '@moonshot-ai/kimi-code-sdk';
 import chalk from 'chalk';
 
 import { PRODUCT_NAME } from '#/constant/app';
@@ -43,6 +43,7 @@ export interface StatusReportOptions {
   readonly statusError?: string;
   readonly managedUsage?: ManagedUsageReport;
   readonly managedUsageError?: string;
+  readonly statusSnapshot?: SessionStatusSnapshot | null;
 }
 
 type Colorize = (text: string) => string;
@@ -142,6 +143,52 @@ export function buildStatusReportLines(options: StatusReportOptions): string[] {
   if (managedSection.length > 0) {
     lines.push('');
     lines.push(...managedSection);
+  }
+
+  // Session activity snapshot
+  const snap = options.statusSnapshot;
+  if (snap !== null && snap !== undefined) {
+    lines.push('');
+    lines.push(accent('Session activity'));
+    const activityRows: FieldRow[] = [];
+    if (snap.goal !== null) {
+      activityRows.push({ label: 'Goal', value: `${snap.goal.status} · ${snap.goal.objective}` });
+    }
+    if (snap.tasks.total > 0) {
+      activityRows.push({
+        label: 'Tasks',
+        value: `${snap.tasks.total} total (${snap.tasks.pending} pending, ${snap.tasks.done} done, ${snap.tasks.blocked} blocked)`,
+      });
+    }
+    if (snap.loop !== null) {
+      activityRows.push({
+        label: 'Loop',
+        value: `"${snap.loop.task}" — ${snap.loop.iteration}/${snap.loop.maxIterations}`,
+      });
+    }
+    if (snap.locks > 0) {
+      activityRows.push({ label: 'File locks', value: String(snap.locks) });
+    }
+    if (snap.health !== null) {
+      activityRows.push({
+        label: 'Health',
+        value: `${Math.round(snap.health.tokenBurnRate)} tok/min · ${(snap.health.avgTurnDuration / 1000).toFixed(1)}s/turn · ${(snap.health.errorRate * 100).toFixed(0)}% errors`,
+      });
+    }
+    if (snap.cost !== null) {
+      const budget = snap.cost.budgetRemaining !== undefined ? ` / $${snap.cost.budgetRemaining.toFixed(2)} rem` : '';
+      activityRows.push({ label: 'Cost', value: `$${snap.cost.totalDollars.toFixed(4)}${budget}` });
+    }
+    if (snap.backgroundTasks > 0) {
+      activityRows.push({ label: 'Background', value: String(snap.backgroundTasks) });
+    }
+    if (snap.subagents > 0) {
+      activityRows.push({ label: 'Subagents', value: String(snap.subagents) });
+    }
+    if (snap.hooks > 0) {
+      activityRows.push({ label: 'Hooks', value: String(snap.hooks) });
+    }
+    addFieldRows(lines, activityRows, muted, value, errorStyle);
   }
 
   return lines;

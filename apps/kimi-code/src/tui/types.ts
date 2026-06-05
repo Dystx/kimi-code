@@ -4,6 +4,7 @@ import type {
   PermissionMode,
   ProviderConfig,
   PromptPart,
+  SessionStatusSnapshot,
   ToolInputDisplay,
 } from '@moonshot-ai/kimi-code-sdk';
 
@@ -37,6 +38,10 @@ export interface AppState {
   /** Current goal snapshot for the footer badge; null/undefined when no active goal. */
   goal?: GoalSnapshot | null;
   mcpServersSummary: string | null;
+  /** Live session status snapshot for the footer badges. */
+  statusSnapshot?: SessionStatusSnapshot | null;
+  /** Active loop state set by /loop command. */
+  loopState?: { task: string; iteration: number; maxIterations: number } | null;
 }
 
 export interface ToolCallBlockData {

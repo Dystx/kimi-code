@@ -232,6 +232,7 @@ export class SessionEventHandler {
         this.handleBackgroundTaskEvent(event); break;
       case 'cron.fired': this.handleCronFired(event); break;
       case 'mcp.server.status': this.renderMcpServerStatus(event.server); break;
+      case 'session.status': this.host.setAppState({ statusSnapshot: event.snapshot }); break;
       case 'tool.list.updated': break;
       default: break;
     }

@@ -7,6 +7,7 @@ import type { PermissionMode } from '../agent/permission';
 import type { SkillSource } from '../skill';
 import type { BackgroundTaskInfo } from '../agent/background';
 import type { ToolInputDisplay } from '../tools/display';
+import type { SessionStatusSnapshot } from '../session/status';
 
 export type { ToolInputDisplay } from '../tools/display';
 export type { KimiErrorPayload } from '../errors';
@@ -285,6 +286,11 @@ export interface McpServerStatusEvent {
   readonly server: McpServerStatusPayload;
 }
 
+export interface SessionStatusUpdatedEvent {
+  readonly type: 'session.status';
+  readonly snapshot: SessionStatusSnapshot;
+}
+
 export interface McpServerStatusPayload {
   readonly name: string;
   readonly transport: 'stdio' | 'http';
@@ -315,6 +321,7 @@ export type AgentEvent =
   | ToolResultEvent
   | ToolListUpdatedEvent
   | McpServerStatusEvent
+  | SessionStatusUpdatedEvent
   | SubagentSpawnedEvent
   | SubagentCompletedEvent
   | SubagentFailedEvent

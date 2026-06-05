@@ -126,6 +126,7 @@ export async function showStatusReport(host: SlashCommandHost): Promise<void> {
     statusError: runtimeStatus.error,
     managedUsage: managedUsage?.usage,
     managedUsageError: managedUsage?.error,
+    statusSnapshot: appState.statusSnapshot,
   });
   const panel = new UsagePanelComponent(lines, host.state.theme.colors.primary, ' Status ');
   host.state.transcriptContainer.addChild(panel);

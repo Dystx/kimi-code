@@ -123,5 +123,11 @@ export async function handleLoopCommand(host: SlashCommandHost, args: string): P
   }
 
   const message = lines.join('\n');
+
+  // Track loop state in TUI for footer badges
+  host.setAppState({
+    loopState: { task: parsed.task, iteration: 1, maxIterations: parsed.maxIterations },
+  });
+
   host.sendNormalUserInput(message);
 }

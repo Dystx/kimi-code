@@ -13,6 +13,7 @@ import chalk from 'chalk';
 import { isRainbowDancing, renderDanceFooterModel } from '#/tui/easter-eggs/dance';
 import type { ColorPalette } from '#/tui/theme/colors';
 import type { AppState } from '#/tui/types';
+import type { SessionStatusSnapshot } from '@moonshot-ai/kimi-code-sdk';
 import {
   createGitStatusCache,
   formatGitBadgeBase,
@@ -215,6 +216,82 @@ export function formatFooterGitBadge(status: GitStatus, colors: ColorPalette): s
   return `${base} ${pullRequest}`;
 }
 
+/**
+ * Format compact status badges from a SessionStatusSnapshot.
+ * Returns an array of rendered badge strings. Empty when no status to show.
+ */
+function formatStatusBadges(
+  status: SessionStatusSnapshot | null | undefined,
+  loopState: { task: string; iteration: number; maxIterations: number } | null | undefined,
+  colors: ColorPalette,
+): string[] {
+  if (status === null || status === undefined) return [];
+  const badges: string[] = [];
+
+  // Tasks
+  if (status.tasks.total > 0) {
+    const parts: string[] = [];
+    if (status.tasks.pending > 0) parts.push(`${status.tasks.pending} pending`);
+    if (status.tasks.done > 0) parts.push(`${status.tasks.done} done`);
+    if (status.tasks.blocked > 0) parts.push(`${status.tasks.blocked} blocked`);
+    const label = parts.length > 0 ? parts.join(', ') : `${status.tasks.total} tasks`;
+    badges.push(chalk.hex(colors.primary)(`[${label}]`));
+  }
+
+  // Loop (from AppState when status snapshot hasn't arrived yet)
+  if (status?.loop !== null && status?.loop !== undefined) {
+    badges.push(
+      chalk.hex(colors.primary)(
+        `[loop ${status.loop.iteration}/${status.loop.maxIterations}]`,
+      ),
+    );
+  } else if (loopState !== null && loopState !== undefined) {
+    badges.push(
+      chalk.hex(colors.primary)(
+        `[loop ${loopState.iteration}/${loopState.maxIterations}]`,
+      ),
+    );
+  }
+
+  // File locks
+  if (status.locks > 0) {
+    badges.push(chalk.hex(colors.warning)(`[${status.locks} lock${status.locks > 1 ? 's' : ''}]`));
+  }
+
+  // Cost
+  if (status.cost !== null && status.cost.totalDollars > 0) {
+    const fraction = status.cost.fractionUsed ?? 0;
+    const costColor = fraction > 0.9 ? colors.error : fraction > 0.7 ? colors.warning : colors.success;
+    const budget = status.cost.budgetRemaining !== undefined
+      ? ` / $${status.cost.budgetRemaining.toFixed(2)}`
+      : '';
+    badges.push(chalk.hex(costColor)(`[$${status.cost.totalDollars.toFixed(3)}${budget}]`));
+  }
+
+  // Background tasks
+  if (status.backgroundTasks > 0) {
+    badges.push(
+      chalk.hex(colors.primary)(
+        `[${status.backgroundTasks} bg task${status.backgroundTasks > 1 ? 's' : ''}]`,
+      ),
+    );
+  }
+
+  // Subagents
+  if (status.subagents > 0) {
+    badges.push(
+      chalk.hex(colors.primary)(`[${status.subagents} subagent${status.subagents > 1 ? 's' : ''}]`),
+    );
+  }
+
+  // Hooks
+  if (status.hooks > 0) {
+    badges.push(chalk.hex(colors.textMuted)(`[${status.hooks} hook${status.hooks > 1 ? 's' : ''}]`));
+  }
+
+  return badges;
+}
+
 export class FooterComponent implements Component {
   private state: AppState;
   private colors: ColorPalette;
@@ -293,6 +370,12 @@ export class FooterComponent implements Component {
 
     const goalBadge = formatGoalBadge(state.goal, colors, this.goalWallClockMs(state.goal));
     if (goalBadge !== null) left.push(goalBadge);
+
+    // Status badges from the live session snapshot
+    const statusBadges = formatStatusBadges(state.statusSnapshot, state.loopState, colors);
+    for (const badge of statusBadges) {
+      left.push(badge);
+    }
 
     const model = modelDisplayName(state);
     if (model) {

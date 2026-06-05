@@ -56,6 +56,7 @@ export type {
   ReloadSummary,
   ResumedAgentState,
   ServicesConfig,
+  SessionStatusSnapshot,
   ShellEnvironment,
   SkillSummary,
   ThinkingConfig,
