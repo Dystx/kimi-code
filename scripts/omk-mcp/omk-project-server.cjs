@@ -15,6 +15,9 @@ const PROJECT_ROOT = process.env.OMK_PROJECT_ROOT || process.cwd();
 const MEMORY_DIR = join(PROJECT_ROOT, '.omk', 'memory');
 const GRAPH_PATH = join(MEMORY_DIR, 'graph-state.json');
 
+// Startup diagnostics — written to stderr so MCP clients capture it in failure messages
+console.error(`[omk-project] started — cwd=${process.cwd()} OMK_PROJECT_ROOT=${process.env.OMK_PROJECT_ROOT || '(unset)'} PROJECT_ROOT=${PROJECT_ROOT}`);
+
 // ---------------------------------------------------------------------------
 // Protocol helpers
 // ---------------------------------------------------------------------------
