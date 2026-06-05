@@ -11,7 +11,7 @@ const { readFile, writeFile, readdir } = require('node:fs/promises');
 const { join, dirname } = require('node:path');
 const { homedir } = require('node:os');
 
-const PROJECT_ROOT = process.cwd();
+const PROJECT_ROOT = process.env.OMK_PROJECT_ROOT || process.cwd();
 const MEMORY_DIR = join(PROJECT_ROOT, '.omk', 'memory');
 const GRAPH_PATH = join(MEMORY_DIR, 'graph-state.json');
 
