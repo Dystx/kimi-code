@@ -20,6 +20,7 @@ import type {
   SkillMapping,
   SkillOutcomeRecord,
 } from './types';
+import { recommendAgentProfile, recommendSkillsForWork } from './keyword-matcher';
 
 /**
  * OrchestrationHooks maintains a queue of orchestration events and maps them
@@ -400,6 +401,57 @@ export class OrchestrationHooks {
     } catch {
       // ignore
     }
+  }
+
+  /**
+   * Analyze a work description (goal title, task description, user prompt)
+   * and recommend the best agent profile + matching skills from the registry.
+   */
+  analyzeWorkContext(workDescription: string): {
+    agentRecommendation?: { profile: string; score: number; description: string };
+    skillRecommendations: Array<{ skillName: string; score: number }>;
+  } {
+    const registry: SkillRegistry | undefined = this.agent?.skills?.registry;
+
+    const agentRecommendation = recommendAgentProfile(workDescription);
+    const skillRecommendations =
+      registry !== undefined
+        ? recommendSkillsForWork(workDescription, registry).map((r) => ({
+            skillName: r.skill.name,
+            score: r.score,
+          }))
+        : [];
+
+    return { agentRecommendation, skillRecommendations };
+  }
+
+  /**
+   * Generate an injection string that recommends an agent profile and relevant skills
+   * based on keyword analysis of the current work context.
+   */
+  renderWorkContextAdvice(workDescription: string): string {
+    const { agentRecommendation, skillRecommendations } = this.analyzeWorkContext(workDescription);
+    const parts: string[] = [];
+
+    if (agentRecommendation !== undefined && agentRecommendation.score >= 0.2) {
+      parts.push(
+        `[Agent recommendation] Based on the work description, consider deploying a **${agentRecommendation.profile}** subagent ` +
+        `(confidence: ${(agentRecommendation.score * 100).toFixed(0)}%). ${agentRecommendation.description}. ` +
+        `Use \`/agent @${agentRecommendation.profile} <task>\` to dispatch.`
+      );
+    }
+
+    if (skillRecommendations.length > 0) {
+      const topSkills = skillRecommendations.slice(0, 3);
+      parts.push(
+        `[Skill recommendations] Relevant skills for this work: ${topSkills
+          .map((s) => `"${s.skillName}" (${(s.score * 100).toFixed(0)}%)`)
+          .join(', ')}.`
+      );
+    }
+
+    if (parts.length === 0) return '';
+    return `[Work context analysis]\n${parts.join('\n')}`;
   }
 
   private isRateLimited(type: OrchestrationEvent['type']): boolean {
