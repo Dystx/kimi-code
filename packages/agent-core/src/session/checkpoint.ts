@@ -40,7 +40,7 @@ export class SessionCheckpointManager {
 
     const tasks = [...session.taskRegistry.snapshot().tasks] as unknown[];
 
-    const plan = null;
+    const plan = mainAgent?.planTracker.data ?? null;
 
     const usage = session.costTracker.status();
     const cwd = session.options.kaos.getcwd();

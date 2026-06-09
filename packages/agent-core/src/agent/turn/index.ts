@@ -344,6 +344,8 @@ export class TurnFlow {
     let turnId = firstTurnId;
     let turnInput = input;
     let turnOrigin = origin;
+    let continuationTurnCount = 0;
+    const maxContinuationTurns = this.agent.kimiConfig?.loopControl?.maxContinuationTurns;
     while (true) {
       const goalBeforeTurn = this.agent.goal.getGoal().goal;
       if (goalBeforeTurn?.status === 'active' && goalBeforeTurn.budget.overBudget) {
@@ -384,6 +386,18 @@ export class TurnFlow {
       if (goal.budget.overBudget) {
         await this.agent.goal.markBlocked({ reason: 'A configured budget was reached' });
         return end;
+      }
+
+      // Explicit max-continuation bound: prevent infinite goal loops when the
+      // model never calls UpdateGoal('complete') and no hard budget is set.
+      if (maxContinuationTurns !== undefined && maxContinuationTurns > 0) {
+        continuationTurnCount += 1;
+        if (continuationTurnCount >= maxContinuationTurns) {
+          await this.agent.goal.markBlocked({
+            reason: `Reached max continuation turns (${maxContinuationTurns})`,
+          });
+          return end;
+        }
       }
 
       turnId = this.allocateTurnId();

@@ -69,6 +69,9 @@ const DEFAULT_SKILL_MAPPINGS: readonly SkillMapping[] = [
   },
 ];
 
+/** Maximum number of deduplication keys to retain before evicting oldest. */
+const MAX_DEDUP_SIZE = 1000;
+
 /**
  * OrchestrationHooks maintains a queue of orchestration events and maps them
  * to skill activations.  Events are emitted by the task registry, subagent
@@ -93,6 +96,10 @@ export class OrchestrationHooks {
   emit(event: OrchestrationEvent): void {
     const dedupKey = `${event.type}:${JSON.stringify(event.payload)}`;
     if (this.dedup.has(dedupKey)) return;
+    if (this.dedup.size >= MAX_DEDUP_SIZE) {
+      const first = this.dedup.values().next().value;
+      if (first !== undefined) this.dedup.delete(first);
+    }
     this.dedup.add(dedupKey);
     this.queue.push(event);
   }
