@@ -4,7 +4,7 @@
  * Emitted as `session.status` events so the TUI can render a live dashboard.
  */
 
-import type { GoalSnapshot } from './goal';
+import type { GoalSnapshot } from '#/agent/goal';
 
 export interface SessionStatusSnapshot {
   // Goals

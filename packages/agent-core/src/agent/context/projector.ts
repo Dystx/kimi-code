@@ -72,21 +72,17 @@ function stripContextMetadata(message: ContextMessage): Message {
 }
 
 export function trimTrailingOpenToolExchange(history: readonly Message[]): Message[] {
-  let lastNonToolIndex = history.length - 1;
-  while (lastNonToolIndex >= 0 && history[lastNonToolIndex]?.role === 'tool') {
-    lastNonToolIndex -= 1;
+  const resultIds = new Set<string>();
+  let firstIncompleteIndex = -1;
+  for (let i = history.length - 1; i >= 0; i--) {
+    const message = history[i]!;
+    if (message.role === 'tool' && message.toolCallId) {
+      resultIds.add(message.toolCallId);
+    } else if (message.role === 'assistant' && message.toolCalls.length > 0) {
+      if (!message.toolCalls.every((tc) => resultIds.has(tc.id))) {
+        firstIncompleteIndex = i;
+      }
+    }
   }
-
-  const assistant = history[lastNonToolIndex];
-  if (assistant === undefined) return [];
-  if (assistant.role !== 'assistant' || assistant.toolCalls.length === 0) return [...history];
-
-  const trailingToolCallIds = new Set(
-    history
-      .slice(lastNonToolIndex + 1)
-      .map((message) => message.toolCallId)
-      .filter((toolCallId): toolCallId is string => typeof toolCallId === 'string'),
-  );
-  const closed = assistant.toolCalls.every((toolCall) => trailingToolCallIds.has(toolCall.id));
-  return closed ? [...history] : history.slice(0, lastNonToolIndex);
+  return firstIncompleteIndex === -1 ? [...history] : history.slice(0, firstIncompleteIndex);
 }

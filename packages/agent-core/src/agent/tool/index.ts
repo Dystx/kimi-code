@@ -429,7 +429,7 @@ export class ToolManager {
             this.agent.subagentHost,
             DEFAULT_AGENT_PROFILES['agent']?.subagents,
           ),
-          new b.AgentSwarmTool(this.agent.subagentHost, this.agent.swarmMode),
+          this.agent.subagentHost && new b.AgentSwarmTool(this.agent.subagentHost, this.agent.swarmMode),
         this.agent.subagentHost && new b.SubagentStatusTool(this.agent.subagentHost),
         this.agent.messageBus && this.agent.subagentHost &&
           new b.SendMessageTool(this.agent, this.agent.messageBus),

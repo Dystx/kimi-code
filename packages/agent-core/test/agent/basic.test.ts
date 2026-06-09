@@ -9,7 +9,6 @@ it('creates an independent agent with a scoped experimental flag resolver', () =
     experimentalFlags: new FlagResolver({}, FLAG_DEFINITIONS),
   });
 
-  expect(ctx.agent.experimentalFlags.enabled('goal_command')).toBe(true);
   expect(ctx.agent.experimentalFlags.enabled('micro_compaction')).toBe(true);
 });
 

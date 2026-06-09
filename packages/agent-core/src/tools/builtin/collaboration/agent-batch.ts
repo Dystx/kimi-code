@@ -105,7 +105,8 @@ export class AgentBatchTool implements BuiltinTool<AgentBatchInput> {
     for (let i = 0; i < args.tasks.length; i++) {
       const task = args.tasks[i]!;
       const profileName = task.subagent_type?.length ? task.subagent_type : 'coder';
-      const handle = await this.subagentHost.spawn(profileName, {
+      const handle = await this.subagentHost.spawn({
+        profileName,
         parentToolCallId: `agent-batch-${i}`,
         prompt: task.prompt,
         description: task.description,
