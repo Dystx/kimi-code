@@ -52,9 +52,7 @@ max_running_tasks = 4
 keep_alive_on_exit = false
 
 [experimental]
-goal_command = false
-micro_compaction = false
-background_ask = false
+micro_compaction = true
 
 [[permission.rules]]
 decision = "allow"
@@ -89,7 +87,7 @@ Fields in the config file fall into two categories: **top-level scalars** that d
 | `thinking` | `table` | — | Default parameters for Thinking mode → [`thinking`](#thinking) |
 | `loop_control` | `table` | — | Agent loop control parameters → [`loop_control`](#loop_control) |
 | `background` | `table` | — | Background task runtime parameters → [`background`](#background) |
-| `experimental` | `table` | — | Persistent experimental feature toggles → [`experimental`](#experimental) |
+| `experimental` | `table` | — | Experimental feature overrides → [`experimental`](#experimental) |
 | `services` | `table` | — | Built-in external service configuration → [`services`](#services) |
 | `permission` | `table` | — | Initial permission rules → [`permission`](#permission) |
 | `hooks` | `array<table>` | — | Lifecycle hooks; see [Hooks](../customization/hooks.md) |
@@ -177,15 +175,11 @@ You can also switch models temporarily without touching the config file — by s
 
 ## `experimental`
 
-`experimental` stores persistent opt-ins for features that are not public by default yet. You can edit this table directly or run `/experiments` in the TUI. The TUI panel stages changes locally until you confirm them, then writes `config.toml` and reloads the current session. Each TOML key is the experimental flag ID, for example `goal_command`.
+`experimental` stores persistent overrides for experimental-feature flags. Currently, `micro_compaction` is the only user-facing entry and defaults to `true`; set it to `false` only when you need to disable automatic trimming of older large tool results.
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `goal_command` | `boolean` | `false` | Enable `/goal` and goal-management tools |
-| `micro_compaction` | `boolean` | `false` | Trim older large tool results from context while preserving recent conversation |
-| `background_ask` | `boolean` | `false` | Allow `AskUserQuestion` to start a background question task when the Agent can continue working |
-
-Environment variables take priority over this table. `KIMI_CODE_EXPERIMENTAL_<NAME>` overrides one feature, and `KIMI_CODE_EXPERIMENTAL_FLAG=1` enables all experimental features for that process — see the full list in [Environment variables → Runtime switches](./env-vars.md#runtime-switches). When a feature is controlled by the environment, `/experiments` shows it as locked.
+| `micro_compaction` | `boolean` | `true` | Trim older large tool results from context while preserving recent conversation |
 
 ## `services`
 
@@ -219,7 +213,7 @@ api_key = "sk-xxx"
 | `pattern` | `string` | Yes | Match pattern in the form `ToolName` or `ToolName(arg-pattern)`, e.g. `Read` or `Bash(rm -rf*)` |
 | `reason` | `string` | No | Rule description for debugging and auditing |
 
-Built-in tool names are listed in [Built-in tools](../reference/tools.md); MCP tools and custom tools can only be matched by tool name — argument patterns are not supported for them.
+Built-in tool names are listed in [Built-in tools](../reference/tools.md). Most built-in tools that accept rule arguments define their own matching subject, such as `Bash(command-pattern)` or `Read(path-pattern)`. `AgentSwarm`, MCP tools, and custom tools can only be matched by tool name — argument patterns are not supported for them.
 
 ```toml
 [[permission.rules]]
@@ -249,7 +243,7 @@ Alongside `config.toml`, the CLI keeps terminal-UI and client preferences in a c
 
 | Field | Type | Default | Description |
 | --- | --- | --- | --- |
-| `theme` | `string` | `auto` | Color theme: `auto` (follow the terminal), `dark`, or `light` |
+| `theme` | `string` | `auto` | Color theme: `auto` (follow the terminal), `dark`, `light`, or the name of a [custom theme](../customization/themes) |
 | `[editor].command` | `string` | `""` | External editor command for composing long input; empty falls back to `$VISUAL` / `$EDITOR` |
 | `[notifications].enabled` | `boolean` | `true` | Whether desktop notifications are sent |
 | `[notifications].notification_condition` | `string` | `unfocused` | When to notify: `unfocused` (only when the terminal is not focused) or `always` |
@@ -257,7 +251,7 @@ Alongside `config.toml`, the CLI keeps terminal-UI and client preferences in a c
 
 ```toml
 # ~/.kimi-code/tui.toml
-theme = "auto" # "auto" | "dark" | "light"
+theme = "auto" # "auto" | "dark" | "light" | custom theme name
 
 [editor]
 command = "" # empty uses $VISUAL / $EDITOR

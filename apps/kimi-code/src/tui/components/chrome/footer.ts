@@ -11,6 +11,7 @@ import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import chalk from 'chalk';
 
 import { isRainbowDancing, renderDanceFooterModel } from '#/tui/easter-eggs/dance';
+import { currentTheme } from '#/tui/theme';
 import type { ColorPalette } from '#/tui/theme/colors';
 import type { AppState } from '#/tui/types';
 import type { SessionStatusSnapshot } from '@moonshot-ai/kimi-code-sdk';
@@ -207,7 +208,7 @@ function formatContextStatus(usage: number, tokens?: number, maxTokens?: number)
 }
 
 export function formatFooterGitBadge(status: GitStatus, colors: ColorPalette): string {
-  const base = chalk.hex(colors.status)(formatGitBadgeBase(status));
+  const base = chalk.hex(colors.textDim)(formatGitBadgeBase(status));
   if (status.pullRequest === null) return base;
 
   const pullRequest = chalk.hex(colors.primary)(
@@ -294,7 +295,6 @@ function formatStatusBadges(
 
 export class FooterComponent implements Component {
   private state: AppState;
-  private colors: ColorPalette;
   private readonly onRefresh: () => void;
   private gitCache: GitStatusCache;
   private gitCacheWorkDir: string;
@@ -312,9 +312,8 @@ export class FooterComponent implements Component {
   private backgroundBashTaskCount = 0;
   private backgroundAgentCount = 0;
 
-  constructor(state: AppState, colors: ColorPalette, onRefresh: () => void = () => {}) {
+  constructor(state: AppState, onRefresh: () => void = () => {}) {
     this.state = state;
-    this.colors = colors;
     this.onRefresh = onRefresh;
     this.gitCacheWorkDir = state.workDir;
     this.gitCache = createGitStatusCache(state.workDir, { onChange: this.onRefresh });
@@ -330,10 +329,6 @@ export class FooterComponent implements Component {
     this.syncGoalClock(state.goal);
     this.syncGoalTimer(state.goal);
     this.state = state;
-  }
-
-  setColors(colors: ColorPalette): void {
-    this.colors = colors;
   }
 
   /**
@@ -359,14 +354,17 @@ export class FooterComponent implements Component {
   invalidate(): void {}
 
   render(width: number): string[] {
-    const colors = this.colors;
+    const colors = currentTheme.palette;
     const state = this.state;
 
     // ── Line 1: mode badges + model + [N task(s) running] + [N agent(s) running] + cwd + git + hints ──
     const left: string[] = [];
-    if (state.permissionMode === 'auto') left.push(chalk.hex(colors.warning).bold('auto'));
-    if (state.permissionMode === 'yolo') left.push(chalk.hex(colors.warning).bold('yolo'));
-    if (state.planMode) left.push(chalk.hex(colors.primary).bold('plan'));
+    const modes: string[] = [];
+    if (state.permissionMode === 'auto') modes.push(chalk.hex(colors.warning).bold('auto'));
+    if (state.permissionMode === 'yolo') modes.push(chalk.hex(colors.warning).bold('yolo'));
+    if (state.planMode) modes.push(chalk.hex(colors.primary).bold('plan'));
+    if (state.swarmMode) modes.push(chalk.hex(colors.accent).bold('swarm'));
+    if (modes.length > 0) left.push(modes.join(' '));
 
     const goalBadge = formatGoalBadge(state.goal, colors, this.goalWallClockMs(state.goal));
     if (goalBadge !== null) left.push(goalBadge);
@@ -383,7 +381,7 @@ export class FooterComponent implements Component {
       const modelLabel = `${model}${thinkingLabel}`;
       let renderedModelLabel = chalk.hex(colors.text)(modelLabel);
       if (isRainbowDancing()) {
-        renderedModelLabel = renderDanceFooterModel(modelLabel, colors);
+        renderedModelLabel = renderDanceFooterModel(modelLabel);
       }
       left.push(renderedModelLabel);
     }
@@ -405,7 +403,7 @@ export class FooterComponent implements Component {
     }
 
     const cwd = shortenCwd(state.workDir);
-    if (cwd) left.push(chalk.hex(colors.status)(cwd));
+    if (cwd) left.push(chalk.hex(colors.textDim)(cwd));
 
     const git = this.gitCache.getStatus();
     if (git !== null) {
@@ -499,9 +497,12 @@ function goalSnapshotKey(goal: AppState['goal']): string | null {
   return [
     goal.goalId,
     goal.status,
+    goal.terminalReason ?? '',
     String(goal.turnsUsed),
     String(goal.tokensUsed),
     String(goal.wallClockMs),
-    goal.updatedAt,
+    String(goal.budget.tokenBudget),
+    String(goal.budget.turnBudget),
+    String(goal.budget.wallClockBudgetMs),
   ].join('\u0000');
 }

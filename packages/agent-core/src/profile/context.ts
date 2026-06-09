@@ -13,17 +13,18 @@ export type PreparedSystemPromptContext = Pick<SystemPromptContext, 'cwdListing'
 
 export async function prepareSystemPromptContext(
   kaos: Kaos,
+  brandHome?: string,
 ): Promise<PreparedSystemPromptContext> {
   const [cwdListing, agentsMd, soulMd, memory] = await Promise.all([
     listDirectory(kaos),
-    loadAgentsMd(kaos),
+    loadAgentsMd(kaos, brandHome),
     loadSoulMd(kaos),
     loadMemoryMd(kaos),
   ]);
   return { cwdListing, agentsMd, soulMd, memory };
 }
 
-export async function loadAgentsMd(kaos: Kaos): Promise<string> {
+export async function loadAgentsMd(kaos: Kaos, brandHome?: string): Promise<string> {
   const workDir = kaos.getcwd();
   const projectRoot = await findProjectRoot(kaos, workDir);
   const dirs = dirsRootToLeaf(kaos, workDir, projectRoot);
@@ -41,11 +42,14 @@ export async function loadAgentsMd(kaos: Kaos): Promise<string> {
   };
 
   // User-level files come first so any project-level AGENTS.md overrides them.
-  const home = kaos.gethome();
-  await collect(join(home, '.kimi-code', 'AGENTS.md'));
+  // The brand dir follows KIMI_CODE_HOME (default ~/.kimi-code); the generic
+  // .agents dir stays under the real OS home so it can be shared across tools.
+  const realHome = kaos.gethome();
+  const brandDir = brandHome ?? join(realHome, '.kimi-code');
+  await collect(join(brandDir, 'AGENTS.md'));
 
   // Generic user-level dir (.agents) matches skill discovery.
-  const genericDirs = [join(home, '.agents')];
+  const genericDirs = [join(realHome, '.agents')];
   const genericFiles = genericDirs.flatMap((dir) =>
     ['AGENTS.md', 'agents.md'].map((name) => join(dir, name)),
   );

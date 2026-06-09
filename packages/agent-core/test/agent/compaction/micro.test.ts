@@ -6,7 +6,7 @@ import {
   AGENT_WIRE_PROTOCOL_VERSION,
   InMemoryAgentRecordPersistence,
 } from '../../../src/agent/records';
-import { FLAG_DEFINITIONS, MASTER_ENV } from '../../../src/flags';
+import { FLAG_DEFINITIONS, FlagResolver, MASTER_ENV } from '../../../src/flags';
 import { estimateTokensForMessages } from '../../../src/utils/tokens';
 import { recordingTelemetry, type TelemetryRecord } from '../../fixtures/telemetry';
 import { testAgent, type TestAgentContext } from '../harness/agent';
@@ -33,6 +33,10 @@ describe('MicroCompaction', () => {
   beforeEach(() => {
     vi.stubEnv(MASTER_ENV, '0');
     vi.stubEnv(MICRO_COMPACTION_FLAG_ENV, '1');
+  });
+
+  it('defaults the micro_compaction flag on', () => {
+    expect(new FlagResolver({}, FLAG_DEFINITIONS).enabled('micro_compaction')).toBe(true);
   });
 
   it('truncates old tool results after cache miss', () => {
@@ -507,10 +511,7 @@ describe('MicroCompaction', () => {
     appendMicroToolExchange(ctx, 1, { output: 'result one' });
 
     vi.setSystemTime(61 * MINUTE);
-    // Force a turn to trigger detect().
-    ctx.mockNextResponse({ type: 'text', text: 'done' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'next' }] });
-    await ctx.untilTurnEnd();
+    ctx.agent.microCompaction.detect();
 
     expect(lastMicroCompactionCutoff(persistence.records)).toBeUndefined();
   });

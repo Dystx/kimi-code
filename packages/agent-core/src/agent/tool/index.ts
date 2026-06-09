@@ -376,8 +376,7 @@ export class ToolManager {
       this.enabledTools.has('TaskList') &&
       this.enabledTools.has('TaskOutput') &&
       this.enabledTools.has('TaskStop');
-    const goalCommandEnabled =
-      this.agent.experimentalFlags.enabled('goal_command') && this.agent.type === 'main';
+    const goalToolsEnabled = this.agent.type === 'main';
     this.builtinTools = new Map(
       [
         new b.ReadTool(kaos, workspace),
@@ -399,11 +398,11 @@ export class ToolManager {
         new b.ExitPlanModeTool(this.agent),
         new b.GetPlanStatusTool(this.agent.planTracker?.planFilePath ?? ''),
         new b.PlanTrackerTool(this.agent),
-        // Goal tools are main-agent-only and gated by the goal_command flag.
-        goalCommandEnabled && new b.CreateGoalTool(this.agent),
-        goalCommandEnabled && new b.GetGoalTool(this.agent),
-        goalCommandEnabled && new b.SetGoalBudgetTool(this.agent),
-        goalCommandEnabled && new b.UpdateGoalTool(this.agent),
+        // Goal tools are main-agent-only.
+        goalToolsEnabled && new b.CreateGoalTool(this.agent),
+        goalToolsEnabled && new b.GetGoalTool(this.agent),
+        goalToolsEnabled && new b.SetGoalBudgetTool(this.agent),
+        goalToolsEnabled && new b.UpdateGoalTool(this.agent),
         this.agent.rpc?.requestQuestion && new b.AskUserQuestionTool(this.agent),
         new b.TodoListTool(this.toolStore),
         new b.TaskListTool(background),
@@ -430,6 +429,7 @@ export class ToolManager {
             this.agent.subagentHost,
             DEFAULT_AGENT_PROFILES['agent']?.subagents,
           ),
+          new b.AgentSwarmTool(this.agent.subagentHost, this.agent.swarmMode),
         this.agent.subagentHost && new b.SubagentStatusTool(this.agent.subagentHost),
         this.agent.messageBus && this.agent.subagentHost &&
           new b.SendMessageTool(this.agent, this.agent.messageBus),
@@ -485,7 +485,7 @@ export class ToolManager {
     if (this.loopToolsOverride !== undefined) return this.loopToolsOverride;
     const mcpNames = [...this.mcpTools.keys()].filter((name) => this.isMcpToolEnabled(name));
     // Mutation goal tools are only offered to the model while a goal exists.
-    const hideGoalMutationTools = (this.agent.goals?.getGoal().goal ?? null) === null;
+    const hideGoalMutationTools = this.agent.goal.getGoal().goal === null;
     return uniq([...this.enabledTools, ...mcpNames])
       .toSorted((a, b) => a.localeCompare(b))
       .filter(

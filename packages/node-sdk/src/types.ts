@@ -6,6 +6,7 @@ import type {
   TelemetryContextPatch,
   TelemetryProperties,
 } from '@moonshot-ai/agent-core';
+import type { Kaos } from '@moonshot-ai/kaos';
 import type { KimiHostIdentity, OAuthRefreshOutcome } from '@moonshot-ai/kimi-code-oauth';
 import type { ContentPart } from '@moonshot-ai/kosong';
 
@@ -22,7 +23,6 @@ export type {
   BackgroundTaskInfo,
   BackgroundTaskStatus,
   ContextMessage,
-  CreateGoalInput,
   ExperimentalFeatureState,
   ExperimentalFlagMap,
   ExperimentalFlagSource,
@@ -69,6 +69,11 @@ export type { ContentPart, Role, ToolCall } from '@moonshot-ai/kosong';
 
 export type PermissionMode = 'yolo' | 'manual' | 'auto';
 
+export interface CreateGoalInput {
+  readonly objective: string;
+  readonly replace?: boolean;
+}
+
 export type TextPromptPart = Extract<ContentPart, { type: 'text' }>;
 export type PromptPart = Extract<ContentPart, { type: 'text' | 'image_url' | 'video_url' }>;
 
@@ -95,6 +100,8 @@ export interface CreateSessionOptions {
   readonly permission?: PermissionMode | undefined;
   readonly planMode?: boolean;
   readonly metadata?: JsonObject | undefined;
+  readonly kaos?: Kaos | undefined;
+  readonly persistenceKaos?: Kaos | undefined;
 }
 
 export interface RenameSessionInput {
@@ -104,6 +111,8 @@ export interface RenameSessionInput {
 
 export interface ResumeSessionInput {
   readonly id: string;
+  readonly kaos?: Kaos | undefined;
+  readonly persistenceKaos?: Kaos | undefined;
 }
 
 export interface ForkSessionInput {
@@ -170,6 +179,7 @@ export interface SessionStatus {
   readonly thinkingLevel: string;
   readonly permission: PermissionMode;
   readonly planMode: boolean;
+  readonly swarmMode?: boolean | undefined;
   readonly contextTokens: number;
   readonly maxContextTokens: number;
   readonly contextUsage: number;
@@ -190,4 +200,4 @@ export interface SessionSummary {
 
 export type ResumedSessionState = Pick<ResumeSessionResult, 'sessionMetadata' | 'agents' | 'warning'>;
 
-export interface ResumedSessionSummary extends SessionSummary, ResumedSessionState {}
+export interface ResumedSessionSummary extends SessionSummary, ResumedSessionState { }

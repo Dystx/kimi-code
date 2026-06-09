@@ -206,7 +206,7 @@ async function queueNextGoal(
   host.track('goal_queue_append');
   if (!hasCurrentGoal) host.requestQueuedGoalPromotion?.();
   host.state.transcriptContainer.addChild(
-    new UpcomingGoalAddedMessageComponent(host.state.theme.colors),
+    new UpcomingGoalAddedMessageComponent(),
   );
   host.state.ui.requestRender();
 }
@@ -228,7 +228,6 @@ async function showGoalQueueManager(
     new GoalQueueManagerComponent({
       goals: snapshot.goals,
       selectedGoalId,
-      colors: host.state.theme.colors,
       onAction: async (action) => {
         try {
           return await handleGoalQueueManagerAction(host, action);
@@ -291,7 +290,6 @@ async function showGoalQueueEditDialog(
   host.mountEditorReplacement(
     new GoalQueueEditDialogComponent({
       goal,
-      colors: host.state.theme.colors,
       onDone: (result) => {
         void handleGoalQueueEditResult(host, result).catch((error: unknown) => {
           host.showError(`Failed to update upcoming goal: ${formatErrorMessage(error)}`);
@@ -354,7 +352,6 @@ function showGoalStartPermissionPrompt(
   };
   host.mountEditorReplacement(
     new GoalStartPermissionPromptComponent({
-      colors: host.state.theme.colors,
       mode: host.state.appState.permissionMode === 'yolo' ? 'yolo' : 'manual',
       onSelect: (choice) => {
         if (choice === 'cancel') {
@@ -416,7 +413,7 @@ async function startGoal(
     return false;
   }
   host.track('goal_create', { replace: parsed.replace });
-  host.state.transcriptContainer.addChild(new GoalSetMessageComponent(host.state.theme.colors));
+  host.state.transcriptContainer.addChild(new GoalSetMessageComponent());
   host.state.ui.requestRender();
   if (options.sendInput !== undefined) {
     options.sendInput(parsed.objective);
@@ -460,7 +457,6 @@ async function resumeGoal(host: SlashCommandHost): Promise<void> {
     return;
   }
   host.track('goal_resume');
-  host.showStatus('Goal resumed.');
   host.sendNormalUserInput(RESUME_GOAL_INPUT);
 }
 
@@ -478,7 +474,7 @@ async function cancelGoal(host: SlashCommandHost): Promise<void> {
     return;
   }
   host.track('goal_cancel');
-  host.showStatus('Goal cancelled.');
+  host.showNotice('Goal cancelled.');
 }
 
 async function showGoalStatus(host: SlashCommandHost): Promise<void> {
@@ -489,7 +485,7 @@ async function showGoalStatus(host: SlashCommandHost): Promise<void> {
     return;
   }
   host.state.transcriptContainer.addChild(
-    new GoalStatusMessageComponent(goal, host.state.theme.colors),
+    new GoalStatusMessageComponent(goal),
   );
   host.state.ui.requestRender();
 }

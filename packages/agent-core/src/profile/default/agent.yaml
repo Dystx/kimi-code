@@ -26,6 +26,7 @@ tools:
   - Agent
   - AgentBatch
   - SubagentStatus
+  - AgentSwarm
   - FetchURL
   - AskUserQuestion
   - EnterPlanMode

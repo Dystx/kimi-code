@@ -263,40 +263,43 @@ oauth = { storage = "file", key = "oauth/kimi-code-env-1234", oauth_host = "http
     const configPath = join(dir, 'experimental.toml');
     const toml = `
 [experimental]
-goal_command = true
 micro_compaction = false
-background_ask = true
 `;
     const config = parseConfigString(toml, configPath);
 
     expect(config.experimental).toEqual({
-      'goal_command': true,
       'micro_compaction': false,
-      'background_ask': true,
     });
 
     await writeConfigFile(configPath, config);
     const text = await readFile(configPath, 'utf-8');
 
     expect(text).toContain('[experimental]');
-    expect(text).toContain('goal_command = true');
     expect(text).toContain('micro_compaction = false');
-    expect(text).toContain('background_ask = true');
     expect(parseConfigString(text, configPath).experimental).toEqual(config.experimental);
   });
 
-  it('rejects unknown experimental feature keys', () => {
-    expectKimiErrorCode(
-      () =>
-        parseConfigString(
-          `
+  it('accepts obsolete experimental feature keys as inert config', async () => {
+    const dir = makeTempDir();
+    const configPath = join(dir, 'obsolete-experimental.toml');
+    const toml = `
 [experimental]
-not_registered = true
-`,
-          'unknown-experimental.toml',
-        ),
-      ErrorCodes.CONFIG_INVALID,
-    );
+legacy_feature = true
+obsolete_feature = false
+removed_flag = true
+`;
+
+    const config = parseConfigString(toml, configPath);
+
+    expect(config.experimental).toEqual({
+      'legacy_feature': true,
+      'obsolete_feature': false,
+      'removed_flag': true,
+    });
+
+    await writeConfigFile(configPath, config);
+    const text = await readFile(configPath, 'utf-8');
+    expect(parseConfigString(text, configPath).experimental).toEqual(config.experimental);
   });
 
   it('loads defaults for absent files and writes typed fields without dropping raw sections', async () => {
@@ -503,7 +506,6 @@ describe('harness config schema and patch merge', () => {
   it('deep-merges experimental config patches', () => {
     const base = parseConfigString(`
 [experimental]
-goal_command = true
 micro_compaction = false
 `);
 
@@ -514,7 +516,6 @@ micro_compaction = false
     });
 
     expect(merged.experimental).toEqual({
-      'goal_command': true,
       'micro_compaction': true,
     });
   });

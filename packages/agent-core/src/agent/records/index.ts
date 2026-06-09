@@ -33,6 +33,9 @@ function restoreAgentRecord(agent: Agent, input: AgentRecord): void {
   switch (input.type) {
     case 'metadata':
       return;
+    case 'forked':
+      agent.goal.restoreForked(input);
+      return;
     case 'turn.prompt':
       agent.turn.restorePrompt();
       return;
@@ -75,6 +78,12 @@ function restoreAgentRecord(agent: Agent, input: AgentRecord): void {
     case 'plan_mode.exit':
       agent.planMode.exit(input.id);
       return;
+    case 'swarm_mode.enter':
+      agent.swarmMode.restoreEnter(input.trigger);
+      return;
+    case 'swarm_mode.exit':
+      agent.swarmMode.exit();
+      return;
     case 'context.append_message':
       agent.context.appendMessage(input.message);
       return;
@@ -102,14 +111,14 @@ function restoreAgentRecord(agent: Agent, input: AgentRecord): void {
     case 'tools.update_store':
       agent.tools.updateStore(input.key, input.value);
       return;
-    // TODO: Move goal state transitions to real resume semantics. These records
-    // are currently audit-only, while goal state is restored from `state.json`
-    // (metadata.custom.goal) instead of being rebuilt from ordered records.
     case 'goal.create':
+      agent.goal.restoreCreate(input);
+      return;
     case 'goal.update':
-    case 'goal.account_usage':
-    case 'goal.continuation':
+      agent.goal.restoreUpdate(input);
+      return;
     case 'goal.clear':
+      agent.goal.restoreClear(input);
       return;
   }
 }
