@@ -32,6 +32,7 @@
 | `/fork` | — | 基于当前会话 fork 一份新会话，保留完整对话历史 | 否 |
 | `/title [<text>]` | `/rename` | 不带参数时显示当前会话标题；带参数时设置为新标题（最长 200 字符） | 是 |
 | `/compact [<instruction>]` | — | 压缩当前对话上下文，释放 token 占用；可附带自定义指令，提示模型压缩时保留哪些信息 | 否 |
+| `/undo [<count>]` | — | 从当前上下文撤销最近的提示词。不带数量时打开选择器；带数量时撤销对应条数。最后一次上下文压缩之前的提示词不能撤销 | 否 |
 | `/init` | — | 分析当前代码库并生成 `AGENTS.md` | 否 |
 | `/export-md [<path>]` | `/export` | 将当前会话导出为 Markdown 文件 | 否 |
 | `/export-debug-zip` | — | 将当前会话导出为调试用 ZIP 压缩包（与 [`kimi export`](./kimi-command.md#kimi-export) 行为一致） | 否 |
@@ -45,7 +46,7 @@
 | `/plan [on\|off]` | — | 切换 Plan 模式。不带参数时翻转；显式传 `on`/`off` 时强制设置。单纯切换不会创建空计划文件 | 是 |
 | `/plan clear` | — | 清除当前 plan 方案 | 否 |
 | `/swarm on\|off` | — | 开启或关闭 swarm mode，但不发送提示词。 | 是 |
-| `/swarm <task>` | — | 先开启 swarm mode，再把 `<task>` 作为普通提示词发送。如果该轮次正常完成，swarm mode 会自动关闭。若当前是 `manual` 权限模式，启动前会提示是否切换到 `auto`。 | 否 |
+| `/swarm <task>` | — | 先开启 swarm mode，再把 `<task>` 作为普通提示词发送。如果该轮次正常完成，swarm mode 会自动关闭。若当前是 `manual` 权限模式，启动前会提示是否切换到 `auto` 或 `yolo`。 | 否 |
 | `/goal [...]` | — | 开始或管理目标模式 | 见下文 |
 
 ::: warning 注意
@@ -108,6 +109,20 @@ Prompt 模式在目标完成时以退出码 `0` 退出，在目标阻塞时以 `
 | 命令 | 别名 | 说明 | 随时可用 |
 | --- | --- | --- | --- |
 | `/exit` | `/quit`、`/q` | 退出 Kimi Code CLI | 否 |
+
+## 内置 Skill 命令
+
+Kimi Code CLI 随包内置了一组 Skill，直接以 `/<name>` 形式出现在斜杠命令面板中。与外部 Skill 不同，它们不需要 `skill:` 前缀，开箱即用。
+
+| 命令 | 说明 |
+| --- | --- |
+| `/mcp-config` | 配置 MCP server 并处理 MCP OAuth 登录。详见 [MCP](../customization/mcp.md) |
+| `/custom-theme [<text>]` | 创建或编辑自定义 TUI 配色主题。详见 [主题](../customization/themes.md) |
+| `/update-config` | 查看或编辑 `config.toml`（模型、供应商、权限、hooks）和 `tui.toml`（主题、编辑器、通知、自动更新） |
+| `/import-from-cc-codex` | 从 Claude Code 和 Codex 导入 instructions、skills 和 MCP 设置 |
+| `/sub-skill` | 发现并将本地 skill 库存重组为分层子 skill 包。包含 `/sub-skill.review`（只读提案）和 `/sub-skill.consolidate`（执行重组） |
+
+所有内置 Skill 命令仅在空闲状态下可用。
 
 ## Skill 动态命令
 

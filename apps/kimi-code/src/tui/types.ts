@@ -13,6 +13,12 @@ import type { NotificationsConfig, UpgradePreferences } from './config';
 import type { PendingApproval, PendingQuestion } from './reverse-rpc/types';
 import type { ColorToken, ThemeName } from './theme';
 
+export interface BannerState {
+  tag: string | null;
+  mainText: string;
+  subText: string | null;
+}
+
 export interface AppState {
   model: string;
   workDir: string;
@@ -43,6 +49,8 @@ export interface AppState {
   statusSnapshot?: SessionStatusSnapshot | null;
   /** Active loop state set by /loop command. */
   loopState?: { task: string; iteration: number; maxIterations: number } | null;
+  /** Optional banner shown below the welcome panel; null means no banner to render. */
+  banner?: BannerState | null;
 }
 
 export interface ToolCallBlockData {

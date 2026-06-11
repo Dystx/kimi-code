@@ -6,7 +6,6 @@ import {
   type Component,
   type Focusable,
   getCapabilities,
-  type SlashCommand,
   Spacer,
 } from '@earendil-works/pi-tui';
 import type { MigrationPlan } from '@moonshot-ai/migration-legacy';
@@ -64,7 +63,10 @@ import { SessionReplayRenderer } from './controllers/session-replay';
 import { StreamingUIController } from './controllers/streaming-ui';
 import { TasksBrowserController } from './controllers/tasks-browser';
 import { installRainbowDance } from './easter-eggs/dance';
-import { FileMentionProvider } from './components/editor/file-mention-provider';
+import {
+  FileMentionProvider,
+  type SlashAutocompleteCommand,
+} from './components/editor/file-mention-provider';
 import { AssistantMessageComponent } from './components/messages/assistant-message';
 import { BackgroundAgentStatusComponent } from './components/messages/background-agent-status';
 import { CronMessageComponent } from './components/messages/cron-message';
@@ -95,6 +97,8 @@ import { combineStartupNotice, isOAuthLoginRequiredError } from './utils/startup
 import { adaptPanelResponse } from './reverse-rpc/approval/adapter';
 import { ApprovalController } from './reverse-rpc/approval/controller';
 import { createApprovalRequestHandler } from './reverse-rpc/approval/handler';
+import { BannerProvider } from './banner/banner-provider';
+import { BannerComponent } from './components/chrome/banner';
 import { registerReverseRPCHandlers } from './reverse-rpc/index';
 import { QuestionController } from './reverse-rpc/question/controller';
 import { createQuestionAskHandler } from './reverse-rpc/question/handler';
@@ -181,6 +185,7 @@ function createInitialAppState(input: KimiTUIStartupInput): AppState {
     sessionTitle: null,
     goal: null,
     mcpServersSummary: null,
+    banner: undefined,
   };
 }
 
@@ -310,10 +315,11 @@ export class KimiTUI {
   }
 
   private setupAutocomplete(): void {
-    const slashCommands: SlashCommand[] = this.getSlashCommands().map((cmd) => {
+    const slashCommands: SlashAutocompleteCommand[] = this.getSlashCommands().map((cmd) => {
       const completer = cmd.completeArgs;
       return {
         name: cmd.name,
+        aliases: cmd.aliases,
         description: cmd.description,
         ...(cmd.argumentHint !== undefined ? { argumentHint: cmd.argumentHint } : {}),
         ...(completer !== undefined
@@ -405,12 +411,45 @@ export class KimiTUI {
     }
   }
 
+  private async loadBanner(): Promise<void> {
+    const provider = new BannerProvider(this.state.appState.version);
+    this.state.appState.banner = await provider.load();
+    if (this.state.appState.banner !== null) {
+      this.renderBanner();
+      this.state.ui.requestRender();
+    }
+  }
+
+  private renderBanner(): void {
+    if (this.state.appState.banner === null || this.state.appState.banner === undefined) {
+      return;
+    }
+    if (
+      this.state.transcriptContainer.children.some(
+        (child) => child instanceof BannerComponent,
+      )
+    ) {
+      return;
+    }
+    const welcomeIndex = this.state.transcriptContainer.children.findIndex(
+      (child) => child instanceof WelcomeComponent,
+    );
+    const banner = new BannerComponent(this.state.appState.banner);
+    if (welcomeIndex >= 0) {
+      this.state.transcriptContainer.children.splice(welcomeIndex + 1, 0, banner);
+    } else {
+      this.state.transcriptContainer.children.unshift(banner);
+    }
+    this.state.transcriptContainer.invalidate();
+  }
+
   private async initMainTui(): Promise<boolean> {
     const shouldReplayHistory = await this.init();
 
     // Mount only after init() succeeds; see mountFooter().
     this.mountFooter();
     this.renderWelcome();
+    void this.loadBanner();
     this.setupAutocomplete();
     void this.loadPersistedInputHistory();
     this.state.editorContainer.clear();
@@ -835,10 +874,11 @@ export class KimiTUI {
   }
 
   sendQueuedMessage(session: Session, item: QueuedMessage): void {
-    this.harness.interactiveAgentId = item.agentId ?? MAIN_AGENT_ID;
-    this.sendMessageInternal(session, item.text, {
-      parts: item.parts,
-      imageAttachmentIds: item.imageAttachmentIds,
+    this.harness.withInteractiveAgent(item.agentId ?? MAIN_AGENT_ID, () => {
+      this.sendMessageInternal(session, item.text, {
+        parts: item.parts,
+        imageAttachmentIds: item.imageAttachmentIds,
+      });
     });
   }
 
@@ -1128,7 +1168,6 @@ export class KimiTUI {
     this.streamingUI.discardPending();
     this.state.queuedMessages = [];
     this.state.swarmModeEntry = undefined;
-    this.harness.interactiveAgentId = MAIN_AGENT_ID;
     this.streamingUI.resetToolCallState();
     this.streamingUI.resetToolUi();
     this.sessionEventHandler.resetRuntimeState();

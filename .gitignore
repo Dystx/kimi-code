@@ -12,3 +12,5 @@ coverage/
 .kimi-stash-dir
 plugins/cdn/
 .kimi-code/
+superpowers
+.worktrees/

@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,6 +21,7 @@ import { BtwPanelComponent } from '#/tui/components/panes/btw-panel';
 import { WelcomeComponent } from '#/tui/components/chrome/welcome';
 import { ModelSelectorComponent } from '#/tui/components/dialogs/model-selector';
 import { TabbedModelSelectorComponent } from '#/tui/components/dialogs/tabbed-model-selector';
+import { UndoSelectorComponent } from '#/tui/components/dialogs/undo-selector';
 import {
   PluginMcpSelectorComponent,
   PluginMarketplaceSelectorComponent,
@@ -198,6 +200,7 @@ function makeSession(overrides: Record<string, unknown> = {}) {
 }
 
 function makeHarness(session = makeSession(), overrides: Record<string, unknown> = {}) {
+  const interactiveAgentScope = new AsyncLocalStorage<string>();
   return {
     getConfig: vi.fn(async () => ({
       models: {
@@ -212,7 +215,12 @@ function makeHarness(session = makeSession(), overrides: Record<string, unknown>
     close: vi.fn(async () => {}),
     track: vi.fn(),
     setTelemetryContext: vi.fn(),
-    interactiveAgentId: 'main',
+    get interactiveAgentId() {
+      return interactiveAgentScope.getStore() ?? 'main';
+    },
+    withInteractiveAgent: vi.fn((agentId: string, fn: () => unknown) => {
+      return interactiveAgentScope.run(agentId, fn);
+    }),
     getExperimentalFeatures: vi.fn(async () => []),
     auth: {
       status: vi.fn(),
@@ -248,6 +256,13 @@ async function makeDriver(
 
 function renderTranscript(driver: MessageDriver): string {
   return driver.state.transcriptContainer.render(120).join('\n');
+}
+
+async function confirmUndoSelection(driver: MessageDriver): Promise<void> {
+  await vi.waitFor(() => {
+    expect(driver.state.editorContainer.children[0]).toBeInstanceOf(UndoSelectorComponent);
+  });
+  (driver.state.editorContainer.children[0] as UndoSelectorComponent).handleInput('\r');
 }
 
 function renderActivity(driver: MessageDriver): string {
@@ -802,6 +817,7 @@ command = "vim"
     driver.state.appState.streamingPhase = 'idle';
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(session.undoHistory).toHaveBeenCalledWith(1);
@@ -829,6 +845,7 @@ command = "vim"
     driver.state.appState.streamingPhase = 'idle';
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(driver.state.transcriptEntries).toEqual([]);
@@ -852,7 +869,15 @@ command = "vim"
       expect(stripSgr(renderTranscript(driver))).toContain('Auto mode: ON');
     });
 
+    driver.handleUserInput('/undo 10');
+    await vi.waitFor(() => {
+      expect(stripSgr(renderTranscript(driver))).toContain(
+        'Cannot undo 10 prompts; only 1 prompt can be undone in the active context.',
+      );
+    });
+
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(session.undoHistory).toHaveBeenCalledWith(1);
@@ -860,6 +885,7 @@ command = "vim"
 
     const transcript = stripSgr(renderTranscript(driver));
     expect(transcript).not.toContain('hello');
+    expect(transcript).not.toContain('Cannot undo 10 prompts');
     expect(transcript).toContain('Auto mode: ON');
     expect(driver.state.appState.permissionMode).toBe('auto');
   });
@@ -897,6 +923,7 @@ command = "vim"
     });
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(session.undoHistory).toHaveBeenCalledWith(1);
@@ -943,6 +970,7 @@ command = "vim"
 
     driver.state.appState.streamingPhase = 'idle';
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(session.undoHistory).toHaveBeenCalledWith(1);
@@ -986,6 +1014,7 @@ command = "vim"
     });
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(session.undoHistory).toHaveBeenCalledWith(1);
@@ -1064,6 +1093,7 @@ command = "vim"
     driver.state.appState.streamingPhase = 'idle';
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(driver.state.transcriptEntries).toEqual([]);
@@ -1092,6 +1122,7 @@ command = "vim"
     driver.state.appState.streamingPhase = 'idle';
 
     driver.handleUserInput('/undo');
+    await confirmUndoSelection(driver);
 
     await vi.waitFor(() => {
       expect(driver.state.transcriptEntries).toEqual([

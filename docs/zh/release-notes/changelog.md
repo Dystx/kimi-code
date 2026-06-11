@@ -1,6 +1,61 @@
+---
+outline: 2
+---
+
 # 变更记录
 
 本页记录 Kimi Code CLI 每个版本的变更内容。
+
+## 0.14.0（2026-06-10）
+
+### 新功能
+
+- 新增 `Interrupt` hook 事件，当用户中断某一轮次时（例如按 Esc）触发，让 hooks 可以观察到轮次正在停止，而不再卡在 working 状态。
+
+### 修复
+
+- 在使用 OpenAI 兼容的 Chat Completions 时保留工具输出的图像。
+
+## 0.13.1（2026-06-10）
+
+### 修复
+
+- 阻止在活跃 turn 期间 fork 会话，并将 wire protocol 定义整合到共享的内部包中。
+- 修复 Kimi Datasource，使其在当前 Kimi Code 环境中使用匹配的 OAuth 凭证和服务端点。
+- 修复 goal 标记文本超出终端宽度的问题。
+
+### 优化
+
+- 在 Anthropic 供应商中新增对 Claude Fable 5 的支持。
+- 新增交互式 undo 选择器和更清晰的 undo 限制提示消息。
+- YOLO 模式在工作目录外写入或编辑文件时不再询问。
+- 优化活跃 skill 提示词，使已加载的 skills 不再被表示为系统提醒。
+- 收紧文件工具引导，使增量编辑通过 Edit 工具执行。
+
+## 0.13.0（2026-06-10）
+
+### 新功能
+
+- 新增自定义颜色主题。在 `~/.kimi-code/themes/` 中以 JSON 文件定义自己的调色板，或使用内置的 `/custom-theme` Skill 命令生成。
+- 新增 `/import-from-cc-codex` 命令，用于导入选定的 Claude Code 和 Codex 指令、Skills 以及 MCP 设置。
+- 在 marketplace 中显示可用的 plugin 更新。
+
+### 修复
+
+- 修复 Windows 构建和开发启动可能因 package binary 解析到命令 shim 而失败的问题。
+- 修复设备登录，在浏览器无法打开时保持 URL 和验证码可见。
+
+### 优化
+
+- 通过活跃状态细分和已用时间，更清晰地展示分组子 Agent 进度。
+- 当排队消息超过终端宽度时，将其截断为单行并显示省略号。
+
+## 0.12.1（2026-06-09）
+
+### 修复
+
+- 允许过时的实验性配置条目保留而不阻塞启动。
+- 为 OpenAI 兼容的 Chat Completions 请求透传 xhigh reasoning effort。
 
 ## 0.12.0（2026-06-09）
 

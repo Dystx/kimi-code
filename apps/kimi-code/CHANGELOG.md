@@ -1,5 +1,55 @@
 # @moonshot-ai/kimi-code
 
+## 0.14.0
+
+### Minor Changes
+
+- [#607](https://github.com/MoonshotAI/kimi-code/pull/607) [`b253a82`](https://github.com/MoonshotAI/kimi-code/commit/b253a82a7a5f7d91883dc77a30b8b38f8b6e1470) - Add an `Interrupt` hook event that fires when the user interrupts a turn (e.g. pressing Esc), letting hooks observe the turn stopping instead of getting stuck on a working state.
+
+### Patch Changes
+
+- [#626](https://github.com/MoonshotAI/kimi-code/pull/626) [`856ec00`](https://github.com/MoonshotAI/kimi-code/commit/856ec002906f4964086915ceb9aa616b89ab6594) - Preserve image outputs from tools when using OpenAI-compatible chat completions.
+
+## 0.13.1
+
+### Patch Changes
+
+- [#610](https://github.com/MoonshotAI/kimi-code/pull/610) [`b747c6a`](https://github.com/MoonshotAI/kimi-code/commit/b747c6a9501e208250d09cf9a2810c885c6ce91b) - Add Claude Fable 5 support to the Anthropic provider.
+
+- [#615](https://github.com/MoonshotAI/kimi-code/pull/615) [`494554e`](https://github.com/MoonshotAI/kimi-code/commit/494554eac5d34d6a3c5c36b6fb2b2e5397b07f0c) - Add an interactive undo selector and clearer undo-limit messages.
+
+- [#598](https://github.com/MoonshotAI/kimi-code/pull/598) [`32d7080`](https://github.com/MoonshotAI/kimi-code/commit/32d708083730c14090f855b1fcb650e2bc713797) - Clarify active skill prompts so loaded skills are no longer represented as system reminders.
+
+- [#595](https://github.com/MoonshotAI/kimi-code/pull/595) [`1580f35`](https://github.com/MoonshotAI/kimi-code/commit/1580f35136eed02331dcff6c8482247d5cf35458) - Fix Kimi Datasource to use the matching OAuth credentials and service endpoint for the active Kimi Code environment.
+
+- [#619](https://github.com/MoonshotAI/kimi-code/pull/619) [`1fbe0e4`](https://github.com/MoonshotAI/kimi-code/commit/1fbe0e4ee89241bee6b5b1d5a4a38b6c6de3c5bf) - Fix goal marker text overflowing terminal width.
+
+- [#612](https://github.com/MoonshotAI/kimi-code/pull/612) [`4603d8a`](https://github.com/MoonshotAI/kimi-code/commit/4603d8ad6e92a303f396f3d79d4e4d212d1c4b14) - Prevent forking sessions during active turns and consolidate wire protocol definitions into a shared internal package.
+
+- [#540](https://github.com/MoonshotAI/kimi-code/pull/540) [`2ebe387`](https://github.com/MoonshotAI/kimi-code/commit/2ebe38769fc50215a7c94a362cd4e943130e1143) - Tighten file tool guidance to route incremental edits through Edit.
+
+- [#606](https://github.com/MoonshotAI/kimi-code/pull/606) [`a1b419a`](https://github.com/MoonshotAI/kimi-code/commit/a1b419ab5901d16ab9527eef62bcd468e76b27a3) - YOLO mode no longer asks before writing or editing files outside the working directory.
+
+## 0.13.0
+
+### Minor Changes
+
+- [#484](https://github.com/MoonshotAI/kimi-code/pull/484) [`f863127`](https://github.com/MoonshotAI/kimi-code/commit/f863127ab7e8b8e2e9af11c54694c08900e3103a) - Add custom color themes. Define your own palette as a JSON file in `~/.kimi-code/themes/`, or generate one with the built-in `/custom-theme` skill command.
+
+- [#582](https://github.com/MoonshotAI/kimi-code/pull/582) [`d85dc0b`](https://github.com/MoonshotAI/kimi-code/commit/d85dc0b96a3c98c6951b8f6e6fa8b663d4c95360) - Add `/import-from-cc-codex` to import selected Claude Code and Codex instructions, Skills, and MCP settings.
+
+- [#593](https://github.com/MoonshotAI/kimi-code/pull/593) [`40506f4`](https://github.com/MoonshotAI/kimi-code/commit/40506f49d689aaf3e920c6bc9ae2b91219ee3f7f) - Show available plugin updates in the marketplace. An installed plugin whose marketplace version is newer than the local version now renders an `update <local> → <latest>` badge (and updates in place on Enter); up-to-date plugins show `installed · v<version>`. The marketplace `version` served in dev and written by the CDN build is now stamped from each plugin's manifest so "latest" stays accurate.
+
+### Patch Changes
+
+- [#587](https://github.com/MoonshotAI/kimi-code/pull/587) [`0abde86`](https://github.com/MoonshotAI/kimi-code/commit/0abde8662a531293fc8faa7cf9089c43ad8d6d76) - Clarify grouped subagent progress with active status breakdowns and elapsed time.
+
+- [#594](https://github.com/MoonshotAI/kimi-code/pull/594) [`f2863af`](https://github.com/MoonshotAI/kimi-code/commit/f2863af267b2e7d5ff5b99ff80c95c379a5b0272) - Fix device login to keep the URL and code visible when the browser cannot be opened.
+
+- [#591](https://github.com/MoonshotAI/kimi-code/pull/591) [`e48234a`](https://github.com/MoonshotAI/kimi-code/commit/e48234af576e41e630736450c66b690226707bc3) - Fix Windows builds and development launches that could fail when package binaries resolve to command shims.
+
+- [#586](https://github.com/MoonshotAI/kimi-code/pull/586) [`7cb4a23`](https://github.com/MoonshotAI/kimi-code/commit/7cb4a23e01dfaf0e049891b90a27b36000714151) - Truncate queued message display to a single line with ellipsis when it exceeds terminal width.
+
 ## 0.12.1
 
 ### Patch Changes
