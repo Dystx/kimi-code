@@ -129,6 +129,17 @@ export class SessionSubagentHost {
     return this.subagentStatuses;
   }
 
+  /** Number of subagents that are still running (not completed or failed). */
+  getActiveCount(): number {
+    let count = 0;
+    for (const status of this.subagentStatuses.values()) {
+      if (status.kind === 'running') {
+        count++;
+      }
+    }
+    return count;
+  }
+
   async spawn(options: SpawnSubagentOptions): Promise<SubagentHandle> {
     options.signal.throwIfAborted();
 

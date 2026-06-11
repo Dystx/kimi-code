@@ -216,6 +216,7 @@ export type KimiErrorCode =
   | 'request.work_dir_required'
   | 'request.prompt_input_empty'
   | 'shell.git_bash_not_found'
+  | 'budget.exceeded'
   | 'not_implemented'
   | 'internal';
 
@@ -534,6 +535,66 @@ export interface McpServerStatusPayload {
   readonly error?: string;
 }
 
+// Fork-specific: live session status dashboard
+export interface SessionStatusSnapshot {
+  readonly goal: GoalSnapshot | null;
+  readonly queuedGoals: number;
+  readonly tasks: {
+    readonly total: number;
+    readonly pending: number;
+    readonly done: number;
+    readonly blocked: number;
+  };
+  readonly plan: {
+    readonly title: string;
+    readonly totalTasks: number;
+    readonly doneTasks: number;
+  } | null;
+  readonly loop: {
+    readonly task: string;
+    readonly iteration: number;
+    readonly maxIterations: number;
+  } | null;
+  readonly locks: number;
+  readonly health: {
+    readonly tokenBurnRate: number;
+    readonly avgTurnDuration: number;
+    readonly errorRate: number;
+  } | null;
+  readonly cost: {
+    readonly totalDollars: number;
+    readonly budgetRemaining?: number;
+    readonly fractionUsed?: number;
+  } | null;
+  readonly backgroundTasks: number;
+  readonly subagents: number;
+  readonly hooks: number;
+  readonly contextUsage: number;
+  readonly contextTokens: number;
+  readonly maxContextTokens: number;
+  readonly orchestration: {
+    readonly queueDepth: number;
+    readonly historyDepth: number;
+    readonly skillsTriggered: number;
+    readonly skillsSuppressed: number;
+    readonly eventsEmitted: number;
+  };
+}
+
+export interface SessionStatusUpdatedEvent {
+  readonly type: 'session.status';
+  readonly snapshot: SessionStatusSnapshot;
+}
+
+export interface SubagentProgressEvent {
+  readonly type: 'subagent.progress';
+  readonly subagentId: string;
+  readonly parentToolCallId: string;
+  readonly preview: string;
+  readonly usage?: TokenUsage | undefined;
+  readonly contextTokens?: number | undefined;
+}
+
 export type AgentEvent =
   | ErrorEvent
   | WarningEvent
@@ -556,11 +617,13 @@ export type AgentEvent =
   | ToolResultEvent
   | ToolListUpdatedEvent
   | McpServerStatusEvent
+  | SessionStatusUpdatedEvent
   | SubagentSpawnedEvent
   | SubagentStartedEvent
   | SubagentSuspendedEvent
   | SubagentCompletedEvent
   | SubagentFailedEvent
+  | SubagentProgressEvent
   | CompactionStartedEvent
   | CompactionBlockedEvent
   | CompactionCancelledEvent

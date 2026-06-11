@@ -934,7 +934,7 @@ export class Session {
         fractionUsed: cost.fractionUsed,
       } : null,
       backgroundTasks: mainAgent?.background.list(true).length ?? 0,
-      subagents: mainAgent?.subagentHost?.getStatuses().size ?? 0,
+      subagents: mainAgent?.subagentHost?.getActiveCount() ?? 0,
       hooks: mainAgent?.hooks?.list().length ?? 0,
       contextUsage,
       contextTokens,

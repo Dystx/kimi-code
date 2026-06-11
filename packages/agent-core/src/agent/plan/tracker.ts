@@ -168,13 +168,23 @@ export class PlanTracker {
   }
 
   /**
+   * Returns true when every task is either done or skipped, meaning the plan
+   * has been fully executed and no further reminders are needed.
+   */
+  get isComplete(): boolean {
+    if (this._data === null) return false;
+    return this._data.tasks.every((t) => t.status === 'done' || t.status === 'skipped');
+  }
+
+  /**
    * Produce a concise text summary suitable for context injection or
    * compaction summary post-processing.
    */
   getSummaryText(): string {
     if (this._data === null) return '';
     const lines: string[] = [];
-    lines.push(`## Plan: ${this._data.title}`);
+    const complete = this.isComplete;
+    lines.push(`## Plan: ${this._data.title}${complete ? ' (COMPLETE)' : ''}`);
 
     const { tasks, currentTaskId } = this._data;
     const pending = tasks.filter((t) => t.status === 'pending').length;
@@ -186,10 +196,11 @@ export class PlanTracker {
       `Progress: ${done}/${tasks.length} done` +
         (inProgress > 0 ? `, ${inProgress} in progress` : '') +
         (blocked > 0 ? `, ${blocked} blocked` : '') +
-        (pending > 0 ? `, ${pending} pending` : ''),
+        (pending > 0 ? `, ${pending} pending` : '') +
+        (complete ? ' — no remaining tasks' : ''),
     );
 
-    if (currentTaskId !== undefined) {
+    if (!complete && currentTaskId !== undefined) {
       const current = tasks.find((t) => t.id === currentTaskId);
       if (current !== undefined) {
         lines.push(`\nCurrent task: [${current.status}] ${current.title}`);

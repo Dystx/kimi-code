@@ -34,7 +34,7 @@ export class PlanTrackerInjector extends DynamicInjector {
 
   protected override getInjection(): string | undefined {
     const tracker = this.agent.planTracker;
-    if (!tracker.isActive) return undefined;
+    if (!tracker.isActive || tracker.isComplete) return undefined;
 
     // Always inject right after compaction.
     if (this.compactedSinceLastInject) {
