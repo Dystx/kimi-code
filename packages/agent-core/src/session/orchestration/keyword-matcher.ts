@@ -153,7 +153,7 @@ export function recommendSkillsForWork(
 
   for (const skill of allSkills) {
     // Build keyword corpus from skill name, description, and tags
-    const tags = Array.isArray(skill.metadata['tags']) ? (skill.metadata['tags'] as string[]).join(' ') : '';
+    const tags = Array.isArray(skill.metadata?.['tags']) ? (skill.metadata['tags'] as string[]).join(' ') : '';
     const skillText = `${skill.name} ${skill.description} ${tags}`.toLowerCase();
     const skillWords = skillText.split(/[^\w]+/).filter((w) => w.length > 2);
     const skillSet = new Set(skillWords);

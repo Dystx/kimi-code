@@ -18,7 +18,8 @@ export interface OrchestrationEvent {
     | 'health.degraded'
     | 'cron.fired'
     | 'hook.fired'
-    | 'mcp.failed';
+    | 'mcp.failed'
+    | 'keyword.matched';
   readonly payload: Record<string, unknown>;
   readonly correlationId?: string;
   readonly priority?: number;
@@ -37,6 +38,12 @@ export interface OrchestrationOptions {
   readonly maxInjectionSize?: number;
   readonly cooldownMs?: number;
   readonly maxSkillRepetition?: number;
+  /** Minimum keyword match score (0-1) to recommend an agent profile. Default 0.3. */
+  readonly agentRecThreshold?: number;
+  /** Minimum keyword match score (0-1) to show a skill in recommendations. Default 0.2. */
+  readonly skillRecThreshold?: number;
+  /** Minimum keyword match score (0-1) to inject a skill's full content. Default 0.25. */
+  readonly skillInjectThreshold?: number;
 }
 
 export interface OrchestrationMetrics {

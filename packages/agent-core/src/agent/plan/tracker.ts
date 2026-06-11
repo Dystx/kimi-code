@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'pathe';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'pathe';
 
 import type { Agent } from '..';
 
@@ -78,6 +78,7 @@ export class PlanTracker {
   async save(): Promise<void> {
     if (this._data === null) return;
     try {
+      await mkdir(dirname(this.filePath), { recursive: true });
       await writeFile(this.filePath, JSON.stringify(this._data, null, 2), 'utf-8');
     } catch (error) {
       this.agent.log.warn('plan-tracker save failed', { error });
@@ -108,6 +109,7 @@ export class PlanTracker {
   async clear(): Promise<void> {
     this._data = null;
     try {
+      await mkdir(dirname(this.filePath), { recursive: true });
       await writeFile(this.filePath, '{}', 'utf-8');
     } catch {
       // Best-effort clear.

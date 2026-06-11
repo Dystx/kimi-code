@@ -13,7 +13,7 @@ describe('OrchestrationHooks E2E', () => {
     ];
 
     const registry: SkillRegistry = {
-      getSkill: (name: string) => skills.find((s) => s.name === name || s.name === `omk-${name}`),
+      getSkill: (name: string) => skills.find((s) => s.name === name),
       renderSkillPrompt: (skill: SkillDefinition, _args: string) =>
         `SKILL:${skill.name}`,
     } as unknown as SkillRegistry;

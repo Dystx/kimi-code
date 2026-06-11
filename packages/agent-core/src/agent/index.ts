@@ -236,7 +236,13 @@ export class Agent {
     this.injection = new InjectionManager(this);
     this.permission = new PermissionManager(this, options.permission);
     this.planMode = new PlanMode(this);
-    this.planTracker = new PlanTracker(this, planTrackerPath(this.homedir) ?? '');
+    // Store the main agent's plan tracker in the project directory so it
+    // survives session changes and is visible to the user.
+    const planTrackerFile =
+      this.type === 'main'
+        ? join(this.config.cwd, '.kimi-code', 'plan-tracker.json')
+        : planTrackerPath(this.homedir) ?? '';
+    this.planTracker = new PlanTracker(this, planTrackerFile);
     this.swarmMode = new SwarmMode(this);
     this.usage = new UsageRecorder(this, options.onUsageRecorded);
     this.skills = options.skills ? new SkillManager(this, options.skills) : null;

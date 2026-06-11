@@ -5,7 +5,8 @@ import type { SkillDefinition, SkillRegistry } from '../../src/skill';
 
 function makeRegistry(skills: SkillDefinition[]): SkillRegistry {
   return {
-    getSkill: (name: string) => skills.find((s) => s.name === name || s.name === `omk-${name}`),
+    getSkill: (name: string) => skills.find((s) => s.name === name ),
+    listSkills: () => skills,
     renderSkillPrompt: (skill: SkillDefinition, _args: string) =>
       skill.name === 'missing' ? '' : `PROMPT:${skill.name}`,
   } as unknown as SkillRegistry;
@@ -41,17 +42,6 @@ describe('OrchestrationHooks', () => {
     hooks.emit({ type: 'task.completed', payload: { taskId: 't1', isCodeTask: false } });
     const drained = hooks.drain();
     expect(drained).toHaveLength(0);
-  });
-
-  it('falls back to omk- prefix for legacy skills', () => {
-    const hooks = new OrchestrationHooks();
-    const agent = makeAgent([{ name: 'omk-quality-gate' } as SkillDefinition]);
-    hooks.setAgent(agent);
-
-    hooks.emit({ type: 'task.completed', payload: { taskId: 't1' } });
-    const drained = hooks.drain();
-    expect(drained).toHaveLength(1);
-    expect(drained[0]).toContain('omk-quality-gate');
   });
 
   it('deduplicates identical events by semantic key', () => {
@@ -279,5 +269,96 @@ describe('OrchestrationHooks', () => {
     hooks.emit({ type: 'goal.paused', payload: { goalId: 'g1', reason: 'runtime_error' } });
     const drained = hooks.drain();
     expect(drained.length).toBeGreaterThanOrEqual(0);
+  });
+
+  describe('drainKeywords', () => {
+    it('injects multiple skills matching keywords in work description', () => {
+      const hooks = new OrchestrationHooks([], { skillInjectThreshold: 0.1 });
+      const agent = makeAgent([
+        { name: 'quality-gate', description: 'Run lint and typecheck' } as SkillDefinition,
+        { name: 'code-review', description: 'Review code for correctness' } as SkillDefinition,
+        { name: 'plan-first', description: 'Plan before implementing' } as SkillDefinition,
+      ]);
+      hooks.setAgent(agent);
+
+      const injections = hooks.drainKeywords('review my code and run lint tests before merging');
+      expect(injections.length).toBeGreaterThanOrEqual(2);
+      expect(injections.some((i) => i.includes('code-review'))).toBe(true);
+      expect(injections.some((i) => i.includes('quality-gate'))).toBe(true);
+      // Each injection should have keyword source marker
+      expect(injections.every((i) => i.includes('source="keyword"'))).toBe(true);
+    });
+
+    it('returns empty when no agent is bound', () => {
+      const hooks = new OrchestrationHooks();
+      expect(hooks.drainKeywords('run lint and tests')).toHaveLength(0);
+    });
+
+    it('returns empty when no skills match keywords', () => {
+      const hooks = new OrchestrationHooks([], { skillInjectThreshold: 0.1 });
+      const agent = makeAgent([
+        { name: 'quantum-physics', description: 'Solve quantum equations' } as SkillDefinition,
+      ]);
+      hooks.setAgent(agent);
+
+      const injections = hooks.drainKeywords('basketball championship finals');
+      expect(injections).toHaveLength(0);
+    });
+
+    it('caps keyword injection output size', () => {
+      const hooks = new OrchestrationHooks([], { skillInjectThreshold: 0.1 });
+      const bigPrompt = 'x'.repeat(5000);
+      const registry = {
+        listSkills: () => [
+          { name: 'skill-a', description: 'aaa', path: '/a', dir: '/a', content: bigPrompt, metadata: {}, source: 'builtin' },
+          { name: 'skill-b', description: 'bbb', path: '/b', dir: '/b', content: bigPrompt, metadata: {}, source: 'builtin' },
+        ],
+        renderSkillPrompt: (skill: SkillDefinition) => skill.content,
+      } as unknown as SkillRegistry;
+      hooks.setAgent({ type: 'main', skills: { registry } } as unknown as import('../../src/agent').Agent);
+
+      const injections = hooks.drainKeywords('aaa bbb');
+      // Should only fit one big prompt (5000 + XML wrapper < 8000, second would exceed)
+      expect(injections.length).toBe(1);
+    });
+
+    it('suppresses repeated keyword skills across turns', () => {
+      const hooks = new OrchestrationHooks([], { maxSkillRepetition: 1, skillInjectThreshold: 0.1 });
+      const agent = makeAgent([
+        { name: 'quality-gate', description: 'Run lint and typecheck' } as SkillDefinition,
+      ]);
+      hooks.setAgent(agent);
+
+      const first = hooks.drainKeywords('run lint and tests');
+      expect(first.length).toBe(1);
+
+      const second = hooks.drainKeywords('run lint and tests again');
+      // Should be suppressed because already injected once this session
+      expect(second.length).toBe(0);
+    });
+
+    it('includes confidence scores in keyword injections', () => {
+      const hooks = new OrchestrationHooks([], { skillInjectThreshold: 0.1 });
+      const agent = makeAgent([
+        { name: 'quality-gate', description: 'Run lint and typecheck' } as SkillDefinition,
+      ]);
+      hooks.setAgent(agent);
+
+      const injections = hooks.drainKeywords('run lint typecheck tests');
+      expect(injections.length).toBe(1);
+      expect(injections[0]).toContain('confidence="');
+    });
+
+    it('default threshold filters out low-confidence matches', () => {
+      const hooks = new OrchestrationHooks(); // default skillInjectThreshold = 0.25
+      const agent = makeAgent([
+        { name: 'kimi-find-skills', description: 'Search and discover skills across multiple sources' } as SkillDefinition,
+      ]);
+      hooks.setAgent(agent);
+
+      // A weak keyword match should be filtered by the default 0.25 threshold
+      const injections = hooks.drainKeywords('orchestrator goes through superpowers first');
+      expect(injections.length).toBe(0);
+    });
   });
 });

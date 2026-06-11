@@ -40,11 +40,19 @@ export class OrchestrationSkillInjector extends DynamicInjector {
       parts.push(`<orchestration-history>\nRecent events:\n${historyLines.join('\n')}\n</orchestration-history>`);
     }
 
-    // Drain pending skill activations
+    // Drain pending skill activations (event-based)
     if (this.hooks.hasPending) {
       const injections = this.hooks.drain();
       if (injections.length > 0) {
         parts.push(...injections);
+      }
+    }
+
+    // Drain keyword-matched skills (context-based) — allows multiple skills
+    if (latestUserText.length > 0) {
+      const keywordInjections = this.hooks.drainKeywords(latestUserText);
+      if (keywordInjections.length > 0) {
+        parts.push(...keywordInjections);
       }
     }
 

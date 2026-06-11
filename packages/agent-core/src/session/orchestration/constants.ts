@@ -10,3 +10,9 @@ export const MAX_INJECTION_SIZE = 8000;
 export const MAX_HISTORY_SIZE = 20;
 /** Maximum times a skill can be injected before it's suppressed as repetitive. */
 export const MAX_SKILL_REPETITION = 3;
+/** Minimum keyword match score to recommend an agent profile (0-1). */
+export const DEFAULT_AGENT_REC_THRESHOLD = 0.3;
+/** Minimum keyword match score to show a skill in recommendations (0-1). */
+export const DEFAULT_SKILL_REC_THRESHOLD = 0.2;
+/** Minimum keyword match score to inject a skill's full content (0-1). */
+export const DEFAULT_SKILL_INJECT_THRESHOLD = 0.25;

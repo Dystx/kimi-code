@@ -57,11 +57,28 @@ export class PlanTrackerTool implements BuiltinTool<PlanTrackerInput> {
       execute: async () => {
         const tracker = this.agent.planTracker;
         if (!tracker.isActive) {
-          return {
-            isError: true,
-            output:
-              'No active plan tracker. A plan must be approved via ExitPlanMode before tasks can be tracked.',
-          };
+          // Auto-initialize from plan mode if a plan has been written but
+          // ExitPlanMode has not yet been called.
+          if (this.agent.planMode.isActive) {
+            try {
+              const planData = await this.agent.planMode.data();
+              if (planData !== null && planData.content.trim().length > 0) {
+                const title = planData.path
+                  ? planData.path.split('/').pop()?.replace(/\.md$/, '') || 'Plan'
+                  : 'Plan';
+                await tracker.initializeFromPlan(planData.content, title);
+              }
+            } catch {
+              // Fall through to the error below.
+            }
+          }
+          if (!tracker.isActive) {
+            return {
+              isError: true,
+              output:
+                'No active plan tracker. A plan must be approved via ExitPlanMode before tasks can be tracked.',
+            };
+          }
         }
 
         switch (args.action) {

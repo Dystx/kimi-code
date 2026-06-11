@@ -25,10 +25,10 @@ function createMockSkillRegistry(): SkillRegistry {
     ['quality-gate', { name: 'quality-gate', description: 'Run quality gates', body: 'Run lint, typecheck, and tests before finishing.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
   ]);
   return {
-    getSkill: (name: string) => skills.get(name) ?? skills.get(`omk-${name}`),
+    getSkill: (name: string) => skills.get(name),
     renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.body,
     listSkills: () => Array.from(skills.values()),
-    hasSkill: (name: string) => skills.has(name) || skills.has(`omk-${name}`),
+    hasSkill: (name: string) => skills.has(name),
   } as SkillRegistry;
 }
 

@@ -31,10 +31,10 @@ function createMockSkillRegistry(): SkillRegistry {
   ]);
 
   return {
-    getSkill: (name: string) => skills.get(name) ?? skills.get(`omk-${name}`),
+    getSkill: (name: string) => skills.get(name),
     renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.body,
     listSkills: () => Array.from(skills.values()),
-    hasSkill: (name: string) => skills.has(name) || skills.has(`omk-${name}`),
+    hasSkill: (name: string) => skills.has(name),
   } as SkillRegistry;
 }
 

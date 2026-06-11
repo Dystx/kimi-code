@@ -3,7 +3,10 @@ import { dirname, join } from 'pathe';
 import type { Agent } from '../../agent';
 import type { SkillDefinition, SkillRegistry } from '../../skill';
 import {
+  DEFAULT_AGENT_REC_THRESHOLD,
   DEFAULT_COOLDOWN_MS,
+  DEFAULT_SKILL_INJECT_THRESHOLD,
+  DEFAULT_SKILL_REC_THRESHOLD,
   MAX_DEDUP_SIZE,
   MAX_HISTORY_SIZE,
   MAX_INJECTION_SIZE,
@@ -61,6 +64,9 @@ export class OrchestrationHooks {
   private readonly maxInjectionSize: number;
   private readonly cooldownMs: number;
   private readonly maxSkillRepetition: number;
+  private readonly agentRecThreshold: number;
+  private readonly skillRecThreshold: number;
+  private readonly skillInjectThreshold: number;
 
   constructor(
     private readonly mappings: readonly SkillMapping[] = DEFAULT_SKILL_MAPPINGS,
@@ -70,6 +76,9 @@ export class OrchestrationHooks {
     this.maxInjectionSize = options.maxInjectionSize ?? MAX_INJECTION_SIZE;
     this.cooldownMs = options.cooldownMs ?? DEFAULT_COOLDOWN_MS;
     this.maxSkillRepetition = options.maxSkillRepetition ?? MAX_SKILL_REPETITION;
+    this.agentRecThreshold = options.agentRecThreshold ?? DEFAULT_AGENT_REC_THRESHOLD;
+    this.skillRecThreshold = options.skillRecThreshold ?? DEFAULT_SKILL_REC_THRESHOLD;
+    this.skillInjectThreshold = options.skillInjectThreshold ?? DEFAULT_SKILL_INJECT_THRESHOLD;
   }
 
   /** Attach a homedir for queue persistence. */
@@ -194,6 +203,56 @@ export class OrchestrationHooks {
     }
 
     this.injectedThisTurn = newlyInjected;
+    return out;
+  }
+
+  /**
+   * Find skills matching keywords in the work description and return rendered
+   * skill injections.  This allows multiple skills to be injected simultaneously
+   * based on the current prompt context, alongside event-driven injections.
+   */
+  drainKeywords(workDescription: string): string[] {
+    const registry: SkillRegistry | undefined = this.agent?.skills?.registry;
+    if (registry === undefined) return [];
+
+    const matches = recommendSkillsForWork(workDescription, registry, this.skillInjectThreshold);
+    if (matches.length === 0) return [];
+
+    const out: string[] = [];
+    let totalSize = 0;
+    const newlyInjected = new Set<string>();
+
+    for (const { skill, score } of matches) {
+      const prompt = registry.renderSkillPrompt(skill, '');
+      if (prompt.length === 0) continue;
+
+      // Repetition suppression (shared with event-based drain)
+      const repKey = `${skill.name}:keyword`;
+      const repCount = this.skillRepetitionCount.get(repKey) ?? 0;
+      if (repCount >= this.maxSkillRepetition) {
+        this._metrics.skillsSuppressed++;
+        continue;
+      }
+
+      const injection = `<orchestration-skill source="keyword" skill="${skill.name}" confidence="${(score * 100).toFixed(0)}%">\n${prompt}\n</orchestration-skill>`;
+      if (totalSize + injection.length > this.maxInjectionSize) {
+        break;
+      }
+
+      totalSize += injection.length;
+      out.push(injection);
+      newlyInjected.add(repKey);
+      this.skillRepetitionCount.set(repKey, repCount + 1);
+      this._metrics.skillsTriggered++;
+
+      // Track for effectiveness learning
+      this.pendingOutcomes.push({
+        skillName: skill.name,
+        eventType: 'keyword.matched',
+      });
+    }
+
+    this.injectedThisTurn = new Set([...this.injectedThisTurn, ...newlyInjected]);
     return out;
   }
 
@@ -433,7 +492,7 @@ export class OrchestrationHooks {
     const { agentRecommendation, skillRecommendations } = this.analyzeWorkContext(workDescription);
     const parts: string[] = [];
 
-    if (agentRecommendation !== undefined && agentRecommendation.score >= 0.2) {
+    if (agentRecommendation !== undefined && agentRecommendation.score >= this.agentRecThreshold) {
       parts.push(
         `[Agent recommendation] Based on the work description, consider deploying a **${agentRecommendation.profile}** subagent ` +
         `(confidence: ${(agentRecommendation.score * 100).toFixed(0)}%). ${agentRecommendation.description}. ` +
@@ -441,8 +500,9 @@ export class OrchestrationHooks {
       );
     }
 
-    if (skillRecommendations.length > 0) {
-      const topSkills = skillRecommendations.slice(0, 3);
+    const filteredSkills = skillRecommendations.filter((s) => s.score >= this.skillRecThreshold);
+    if (filteredSkills.length > 0) {
+      const topSkills = filteredSkills.slice(0, 3);
       parts.push(
         `[Skill recommendations] Relevant skills for this work: ${topSkills
           .map((s) => `"${s.skillName}" (${(s.score * 100).toFixed(0)}%)`)
@@ -473,6 +533,6 @@ export class OrchestrationHooks {
   }
 
   private resolveSkill(registry: SkillRegistry, name: string): SkillDefinition | undefined {
-    return registry.getSkill(name) ?? registry.getSkill(`omk-${name}`);
+    return registry.getSkill(name);
   }
 }
