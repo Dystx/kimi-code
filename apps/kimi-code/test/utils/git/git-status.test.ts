@@ -271,4 +271,43 @@ describe('git status cache', () => {
     expect(linked).toContain('\u001B]8;;https://github.com/acme/repo/pull/12\u0007');
     expect(linked).toContain('\u001B]8;;\u0007');
   });
+
+  it('does not spawn duplicate git reads while a refresh is pending', async () => {
+    vi.useFakeTimers();
+
+    mocks.spawnSync.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('rev-parse')) {
+        return { status: 0, stdout: 'true\n' };
+      }
+      return { status: 1, stdout: '' };
+    });
+
+    let branchCallback: ((error: Error | null, stdout: string, stderr: string) => void) | undefined;
+    mocks.execFile.mockImplementation(
+      (_cmd: string, args: string[], _options: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (args.join(' ').includes('branch')) {
+          branchCallback = callback;
+          return;
+        }
+        if (args.join(' ').includes('status')) {
+          // leave status refresh pending
+          return;
+        }
+        callback(new Error('unexpected execFile call'), '', '');
+      },
+    );
+
+    const cache = createGitStatusCache('/tmp/repo');
+    cache.getStatus();
+    cache.getStatus();
+    cache.getStatus();
+
+    // Only one branch read and one status read should have started.
+    expect(mocks.execFile).toHaveBeenCalledTimes(2);
+
+    branchCallback?.(null, 'main\n', '');
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(cache.getStatus()?.branch).toBe('main');
+  });
 });
