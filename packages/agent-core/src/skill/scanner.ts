@@ -8,7 +8,7 @@ import { normalizeSkillName } from './types';
 // Relative to brandHomeDir, which already IS the brand data dir (~/.kimi-code or
 // $KIMI_CODE_HOME) — no '.kimi-code' segment here, or it would nest twice.
 const USER_BRAND_DIRS = ['skills'] as const;
-const USER_GENERIC_DIRS = ['.agents/skills'] as const;
+const USER_GENERIC_DIRS = ['.agents/skills', '.kimi/skills'] as const;
 const PROJECT_BRAND_DIRS = ['.kimi-code/skills'] as const;
 const PROJECT_GENERIC_DIRS = ['.agents/skills'] as const;
 

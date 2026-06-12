@@ -24,3 +24,5 @@ The same information is now surfaced through the footer chrome:
 - Git status reads are now async and TTL-cached so the footer never blocks on `git` or `gh` calls.
 - Agent tool and profile prompt sources use `?raw` imports so they are bundled into `dist/`.
 - ACP session replay and error handling have been hardened.
+- The skill scanner now also looks at `~/.kimi/skills/` as a legacy user skill root, so skills are not silently ignored if they live there instead of `~/.kimi-code/skills/`.
+- Session startup now logs the resolved skill roots and total skill count for easier debugging.

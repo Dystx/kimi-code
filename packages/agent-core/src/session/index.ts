@@ -593,6 +593,10 @@ export class Session {
     });
     await this.skills.loadRoots(roots);
     registerBuiltinSkills(this.skills);
+    this.log.info('skills loaded', {
+      roots: roots.map((root) => root.path),
+      count: this.skills.listSkills().length,
+    });
   }
 
   private async loadMcpServers(): Promise<void> {
