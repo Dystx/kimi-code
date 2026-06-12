@@ -60,7 +60,7 @@ const PATTERNS: Record<string, RegExp[]> = {
   ],
   python: [
     /^(?:async\s+)?def\s+(\w+)\s*\(/gm,
-    /^class\s+(\w+)\s*[:\(]/gm,
+    /^class\s+(\w+)\s*[:(]/gm,
   ],
   go: [
     /^func\s+(?:\([^)]+\)\s+)?(\w+)\s*\(/gm,
@@ -72,7 +72,7 @@ const PATTERNS: Record<string, RegExp[]> = {
   ],
   java: [
     /^(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:abstract\s+)?(?:class|interface|enum)\s+(\w+)/gm,
-    /^(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:\w+[<>\[\]\s]*)+\s+(\w+)\s*\(/gm,
+    /^(?:public\s+|private\s+|protected\s+)?(?:static\s+)?(?:\w+[<>[\]\s]*)+\s+(\w+)\s*\(/gm,
   ],
 };
 
@@ -103,7 +103,7 @@ export class BuildCodeIndexTool implements BuiltinTool<BuildCodeIndexInput> {
         for await (const filePath of this.kaos.glob(dir, pattern)) {
           // Check exclude patterns
           const isExcluded = args.exclude.some((ex) => {
-            const regex = ex.replace(/\*\*/g, '<<<STARSTAR>>>').replace(/\*/g, '[^/]*').replace(/<<<STARSTAR>>>/g, '.*');
+            const regex = ex.replaceAll('**', '<<<STARSTAR>>>').replaceAll('*', '[^/]*').replaceAll('<<<STARSTAR>>>', '.*');
             return new RegExp(regex).test(filePath);
           });
           if (isExcluded) continue;

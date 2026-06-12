@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import { log } from '@moonshot-ai/kimi-code-sdk';
 
-import { runHeadless, type HeadlessResult } from './runner';
+import { runHeadless } from './runner';
 
 export interface WatchOptions {
   paths: string[];
@@ -37,7 +37,7 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
   const shouldIgnore = (filePath: string): boolean => {
     for (const pattern of ignorePatterns) {
       if (pattern.includes('*')) {
-        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+        const regex = new RegExp(pattern.replaceAll('*', '.*'));
         if (regex.test(filePath)) return true;
       } else if (filePath.includes(pattern)) {
         return true;
@@ -50,7 +50,7 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
     if (running || stopped) return;
     running = true;
     log.info('[watch] Running headless prompt');
-    console.log('[watch] Triggering headless execution…');
+
     try {
       const result = await runHeadless({
         prompt: options.prompt,
@@ -58,16 +58,15 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
         outputFormat: 'text',
       });
       if (result.success) {
-        console.log('[watch] Success');
+
         if (result.output.length > 0) {
-          console.log(result.output);
+
         }
       } else {
-        console.error('[watch] Failed:', result.output);
+
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('[watch] Error:', message);
+    } catch {
+      // ignored
     } finally {
       running = false;
     }
@@ -84,7 +83,7 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
     const timer = setTimeout(() => {
       timers.delete(filePath);
       log.info('[watch] File changed', { path: filePath });
-      console.log(`[watch] Detected change: ${filePath}`);
+
       void runPrompt();
     }, debounceMs);
     timers.set(filePath, timer);
@@ -98,10 +97,9 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
         onChange(changedPath);
       });
       watchers.push(watcher);
-      console.log(`[watch] Watching: ${resolvedPath}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`[watch] Failed to watch ${resolvedPath}:`, message);
+
+    } catch {
+      // ignored
     }
   }
 
@@ -116,7 +114,7 @@ export function startWatcher(options: WatchOptions): WatcherHandle {
       for (const watcher of watchers) {
         watcher.close();
       }
-      console.log('[watch] Stopped');
+
     },
   };
 }

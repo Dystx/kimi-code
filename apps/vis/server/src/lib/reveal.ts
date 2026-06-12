@@ -15,6 +15,16 @@ export function revealCommandFor(path: string, platform: NodeJS.Platform = proce
       // `start` is a cmd built-in; the empty title `""` prevents the path
       // from being mistaken for a window title.
       return { command: 'cmd', args: ['/c', 'start', '""', path] };
+    case 'aix':
+    case 'android':
+    case 'cygwin':
+    case 'freebsd':
+    case 'haiku':
+    case 'linux':
+    case 'netbsd':
+    case 'openbsd':
+    case 'sunos':
+      return { command: 'xdg-open', args: [path] };
     default:
       return { command: 'xdg-open', args: [path] };
   }

@@ -1,5 +1,4 @@
 import type { Message } from '@moonshot-ai/kosong';
-import { estimateTokensForMessage } from '../../utils/tokens';
 import {
   DEFAULT_COMPACTION_CONFIG,
   DefaultCompactionStrategy,

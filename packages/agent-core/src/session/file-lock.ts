@@ -76,7 +76,7 @@ export class SessionFileLock {
   }
 
   private normalizePath(path: string): string {
-    return path.replace(/\\/g, '/').replace(/\/+/g, '/');
+    return path.replaceAll('\\', '/').replaceAll(/\/+/g, '/');
   }
 
   async save(homedir: string): Promise<void> {

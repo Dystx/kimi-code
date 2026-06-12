@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, type MockInstance } from 'vitest';
 
 import {
   configuredModel,
@@ -42,16 +42,20 @@ describe('formatTurnEndedFailure', () => {
   it('formats error events', () => {
     const event = {
       type: 'turn.ended' as const,
+      agentId: 'main',
+      sessionId: 'session-1',
       turnId: 1,
       reason: 'failed' as const,
-      error: { code: 'E_TEST', message: 'Something broke' },
+      error: { code: 'internal' as const, message: 'Something broke', retryable: false },
     };
-    expect(formatTurnEndedFailure(event)).toBe('E_TEST: Something broke');
+    expect(formatTurnEndedFailure(event)).toBe('internal: Something broke');
   });
 
   it('formats non-error reasons', () => {
     const event = {
       type: 'turn.ended' as const,
+      agentId: 'main',
+      sessionId: 'session-1',
       turnId: 1,
       reason: 'cancelled' as const,
     };
@@ -61,13 +65,38 @@ describe('formatTurnEndedFailure', () => {
 
 describe('hasTurnId', () => {
   it('returns true for events with turnId', () => {
-    expect(hasTurnId({ type: 'turn.ended', turnId: 1, reason: 'completed' })).toBe(true);
-    expect(hasTurnId({ type: 'assistant.delta', turnId: 1, delta: 'hi', agentId: 'main' })).toBe(true);
+    expect(
+      hasTurnId({
+        type: 'turn.ended',
+        agentId: 'main',
+        sessionId: 'session-1',
+        turnId: 1,
+        reason: 'completed',
+      }),
+    ).toBe(true);
+    expect(
+      hasTurnId({
+        type: 'assistant.delta',
+        agentId: 'main',
+        sessionId: 'session-1',
+        turnId: 1,
+        delta: 'hi',
+      }),
+    ).toBe(true);
   });
 
   it('returns false for events without turnId', () => {
-    expect(hasTurnId({ type: 'session.meta.updated' })).toBe(false);
-    expect(hasTurnId({ type: 'error', code: 'E_TEST', message: 'msg', agentId: 'main' })).toBe(false);
+    expect(hasTurnId({ type: 'session.meta.updated', agentId: 'main', sessionId: 'session-1' })).toBe(false);
+    expect(
+      hasTurnId({
+        type: 'error',
+        agentId: 'main',
+        sessionId: 'session-1',
+        code: 'internal',
+        message: 'msg',
+        retryable: false,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -116,8 +145,8 @@ describe('installHeadlessHandlers', () => {
 
     installHeadlessHandlers(session);
 
-    const approvalHandler = session.setApprovalHandler.mock.calls[0]![0];
-    const questionHandler = session.setQuestionHandler.mock.calls[0]![0];
+    const approvalHandler = (session.setApprovalHandler as unknown as MockInstance).mock.calls[0]![0];
+    const questionHandler = (session.setQuestionHandler as unknown as MockInstance).mock.calls[0]![0];
 
     expect(approvalHandler()).toEqual({ decision: 'approved' });
     expect(questionHandler()).toBeNull();

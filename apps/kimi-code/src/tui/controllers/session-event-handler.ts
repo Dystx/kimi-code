@@ -2,13 +2,9 @@ import type { Component, Focusable } from '@earendil-works/pi-tui';
 import type {
   AgentStatusUpdatedEvent,
   AssistantDeltaEvent,
-  CompactionCancelledEvent,
-  CompactionCompletedEvent,
-  CompactionStartedEvent,
   CronFiredEvent,
   ErrorEvent,
   Event,
-  GoalUpdatedEvent,
   HookResultEvent,
   Session,
   SessionMetaUpdatedEvent,
@@ -27,8 +23,6 @@ import type {
 } from '@moonshot-ai/kimi-code-sdk';
 
 import { MoonLoader } from '../components/chrome/moon-loader';
-import { buildGoalMarker } from '../components/messages/goal-markers';
-import { StatusMessageComponent } from '../components/messages/status-message';
 import {
   SwarmModeMarkerComponent,
   type SwarmModeMarkerState,
@@ -37,26 +31,21 @@ import {
   OAUTH_LOGIN_REQUIRED_CODE,
   OAUTH_LOGIN_REQUIRED_STARTUP_NOTICE,
 } from '../constant/kimi-tui';
-import { buildGoalCompletionMessage } from '../utils/goal-completion';
 import {
   argsRecord,
   formatErrorPayload,
-  formatErrorMessage,
   isTodoItemShape,
   serializeToolResultOutput,
   stringValue,
 } from '../utils/event-payload';
-import { formatBackgroundTaskTranscript } from '../utils/background-task-status';
 import { formatHookResultMarkdown } from '../utils/hook-result-format';
 import { McpOAuthAuthorizationUrlOpener } from '../utils/mcp-oauth';
 import {
   formatMcpStartupStatusSummary,
-  mcpServerStatusKey,
   type McpServerStatusSnapshot,
   selectMcpStartupStatusRows,
 } from '../utils/mcp-server-status';
 import { openUrl } from '#/utils/open-url';
-import { currentTheme } from '#/tui/theme';
 import type { ColorToken } from '#/tui/theme';
 import { errorReportHintLine } from '../constant/feedback';
 import { formatStepDebugTiming } from '#/utils/usage/debug-timing';
@@ -78,7 +67,6 @@ import type {
   TranscriptEntry,
 } from '../types';
 import type { TUIState } from '../tui-state';
-import { createGoal as startGoalCommand } from '../commands/goal';
 
 export interface SessionEventHost {
   state: TUIState;
@@ -268,6 +256,7 @@ export class SessionEventHandler {
       case 'mcp.server.status': this.mcpController.handleServerStatus(event.server); break;
       case 'session.status': this.host.setAppState({ statusSnapshot: event.snapshot }); break;
       case 'tool.list.updated': break;
+      case "subagent.progress": break;
       default: break;
     }
   }

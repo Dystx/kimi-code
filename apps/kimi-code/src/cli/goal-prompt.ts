@@ -35,6 +35,8 @@ export function goalExitCode(status: string | undefined): number {
       return GOAL_EXIT_CODES.blocked;
     case 'paused':
       return GOAL_EXIT_CODES.paused;
+    case undefined:
+      return GOAL_EXIT_CODES.complete;
     default:
       return GOAL_EXIT_CODES.complete;
   }

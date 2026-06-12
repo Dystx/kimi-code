@@ -491,6 +491,9 @@ function runPromptTurn(
         case 'turn.step.completed':
         case 'warning':
           return;
+        case 'session.status':
+        case 'subagent.progress':
+          return;
       }
     });
 

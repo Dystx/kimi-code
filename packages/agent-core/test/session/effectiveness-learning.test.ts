@@ -9,10 +9,18 @@ describe('Skill effectiveness learning', () => {
     agent: import('../../src/agent').Agent;
   } {
     const skills: SkillDefinition[] = [
-      { name: 'code-review', render: () => 'Review' } as SkillDefinition,
+      {
+        name: 'code-review',
+        description: 'Review code changes',
+        path: '/test/code-review',
+        dir: '/test',
+        content: 'Review',
+        metadata: {},
+        source: 'builtin',
+      } as SkillDefinition,
     ];
 
-    const registry: SkillRegistry = {
+    const registry = {
       getSkill: (name: string) => skills.find((s) => s.name === name),
       renderSkillPrompt: (skill: SkillDefinition) => `SKILL:${skill.name}`,
     } as unknown as SkillRegistry;
@@ -151,6 +159,6 @@ describe('Skill effectiveness learning', () => {
     hooks.recordTurnOutcome('success');
 
     const report = hooks.effectivenessReport();
-    expect(report[0].total).toBe(1);
+    expect(report[0]!.total).toBe(1);
   });
 });

@@ -86,13 +86,12 @@ priority = 0
 
   it('handles all task lifecycle events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     hooks.emit({ type: 'task.created', payload: { taskId: 't1', totalTaskCount: 5, hasActiveGoal: true }, priority: 1 });
     hooks.emit({ type: 'task.unblocked', payload: { taskId: 't1' }, priority: 1 });
@@ -110,13 +109,12 @@ priority = 0
 
   it('handles all subagent events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     hooks.emit({ type: 'subagent.started', payload: { subagentId: 'sa1', profile: 'coder' }, priority: 2 });
     hooks.emit({ type: 'subagent.completed', payload: { subagentId: 'sa1', hasDiff: true }, priority: 3 });
@@ -132,13 +130,12 @@ priority = 0
 
   it('handles all goal lifecycle events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     hooks.emit({ type: 'goal.started', payload: { goalId: 'g1', taskCount: 5 }, priority: 1 });
     hooks.emit({ type: 'goal.completed', payload: { goalId: 'g1' }, priority: 1 });
@@ -155,13 +152,12 @@ priority = 0
 
   it('handles health, cron, hook, and mcp events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     hooks.emit({ type: 'health.degraded', payload: { reason: 'high_latency', metric: 'p95' }, priority: 0 });
     hooks.emit({ type: 'cron.fired', payload: { jobId: 'job1', cron: '*/5 * * * *' }, priority: 1 });
@@ -179,13 +175,12 @@ priority = 0
 
   it('suppresses repetitive skills after max repetitions', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
     // Emit the same event type 5 times (max_skill_repetition = 3)
     for (let i = 0; i < 5; i++) {
       hooks.emit({
@@ -205,13 +200,12 @@ priority = 0
 
   it('adaptive context includes recent event summaries', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     // Emit a mix of events
     hooks.emit({ type: 'subagent.completed', payload: { subagentId: 'sa1', hasDiff: true } });
@@ -231,13 +225,12 @@ priority = 0
 
   it('resets skill repetition on goal completion', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    const hooks = session.orchestrationHooks!;
+    const hooks = session.orchestrationHooks;
 
     // Emit events to build up repetition counts
     for (let i = 0; i < 3; i++) {

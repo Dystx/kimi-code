@@ -1,13 +1,29 @@
 /**
  * Cached git branch + working-tree status for the footer/statusline.
  *
- * Branch name refreshes every 5s, porcelain status every 15s. Branch
- * and status reads stay synchronous with short timeouts. Pull request
- * lookup uses an async cache so a slow `gh pr view` never blocks
- * footer rendering.
+ * Branch name refreshes every 5s, porcelain status every 15s. All git reads
+ * are asynchronous; `getStatus()` returns the latest cached value immediately
+ * and never blocks the render loop. Pull request lookup uses its own async
+ * cache so a slow `gh pr view` never blocks footer rendering.
  */
 
 import { execFile, spawnSync } from 'node:child_process';
+
+function execFilePromise(
+  file: string,
+  args: readonly string[],
+  options: object,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, options, (error, stdout, stderr) => {
+      if (error !== null) {
+        reject(error);
+        return;
+      }
+      resolve({ stdout: stdout, stderr: stderr });
+    });
+  });
+}
 
 const BRANCH_TTL_MS = 5_000;
 const STATUS_TTL_MS = 15_000;
@@ -16,7 +32,7 @@ const SPAWN_TIMEOUT_MS = 500;
 const PR_SPAWN_TIMEOUT_MS = 5_000;
 
 export interface GitStatus {
-  readonly branch: string;
+  readonly branch: string | null;
   readonly dirty: boolean;
   readonly ahead: number;
   readonly behind: number;
@@ -31,7 +47,7 @@ export interface PullRequestInfo {
 }
 
 export interface GitStatusCache {
-  /** Returns current status, or `null` when workDir is not a git repo. */
+  /** Returns current cached status, or `null` when workDir is not a git repo. */
   getStatus(): GitStatus | null;
 }
 
@@ -42,6 +58,7 @@ export interface GitStatusCacheOptions {
 interface BranchState {
   value: string | null;
   fetchedAt: number;
+  pending: boolean;
 }
 
 interface StatusState {
@@ -51,6 +68,7 @@ interface StatusState {
   diffAdded: number;
   diffDeleted: number;
   fetchedAt: number;
+  pending: boolean;
 }
 
 interface PullRequestState {
@@ -68,7 +86,7 @@ export function createGitStatusCache(
   options: GitStatusCacheOptions = {},
 ): GitStatusCache {
   const isRepo = detectGitRepo(workDir);
-  let branch: BranchState = { value: null, fetchedAt: 0 };
+  let branch: BranchState = { value: null, fetchedAt: 0, pending: false };
   let status: StatusState = {
     dirty: false,
     ahead: 0,
@@ -76,6 +94,7 @@ export function createGitStatusCache(
     diffAdded: 0,
     diffDeleted: 0,
     fetchedAt: 0,
+    pending: false,
   };
   let pullRequest: PullRequestState = {
     value: null,
@@ -90,15 +109,33 @@ export function createGitStatusCache(
       if (!isRepo) return null;
 
       const now = Date.now();
-      if (now - branch.fetchedAt >= BRANCH_TTL_MS) {
-        branch = { value: readBranch(workDir), fetchedAt: now };
-      }
-      if (branch.value === null) return null;
 
-      if (now - status.fetchedAt >= STATUS_TTL_MS) {
-        status = { ...readStatus(workDir), fetchedAt: now };
+      if (now - branch.fetchedAt >= BRANCH_TTL_MS && !branch.pending) {
+        branch = { ...branch, pending: true };
+        void readBranch(workDir).then((value) => {
+          const changed = value !== branch.value;
+          branch = { value, fetchedAt: Date.now(), pending: false };
+          if (changed) options.onChange?.();
+        });
       }
-      refreshPullRequestIfNeeded(branch.value, now);
+
+      if (now - status.fetchedAt >= STATUS_TTL_MS && !status.pending) {
+        status = { ...status, pending: true };
+        void readStatus(workDir).then((value) => {
+          const changed =
+            value.dirty !== status.dirty ||
+            value.ahead !== status.ahead ||
+            value.behind !== status.behind ||
+            value.diffAdded !== status.diffAdded ||
+            value.diffDeleted !== status.diffDeleted;
+          status = { ...value, fetchedAt: Date.now(), pending: false };
+          if (changed) options.onChange?.();
+        });
+      }
+
+      if (branch.value !== null) {
+        refreshPullRequestIfNeeded(branch.value, now);
+      }
 
       return {
         branch: branch.value,
@@ -155,41 +192,38 @@ function detectGitRepo(workDir: string): boolean {
   }
 }
 
-function readBranch(workDir: string): string | null {
+async function readBranch(workDir: string): Promise<string | null> {
   try {
-    const result = spawnSync('git', ['-C', workDir, 'branch', '--show-current'], {
-      encoding: 'utf8',
-      timeout: SPAWN_TIMEOUT_MS,
-    });
-    if (result.status !== 0) return null;
-    const name = result.stdout.trim();
+    const { stdout } = await execFilePromise(
+      'git',
+      ['-C', workDir, 'branch', '--show-current'],
+      { encoding: 'utf8', timeout: SPAWN_TIMEOUT_MS },
+    );
+    const name = stdout.trim();
     return name.length > 0 ? name : null;
   } catch {
     return null;
   }
 }
 
-function readStatus(workDir: string): {
+async function readStatus(workDir: string): Promise<{
   dirty: boolean;
   ahead: number;
   behind: number;
   diffAdded: number;
   diffDeleted: number;
-} {
+}> {
   try {
-    const result = spawnSync('git', ['-C', workDir, 'status', '--porcelain', '-b'], {
-      encoding: 'utf8',
-      timeout: SPAWN_TIMEOUT_MS,
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    if (result.status !== 0) {
-      return { dirty: false, ahead: 0, behind: 0, diffAdded: 0, diffDeleted: 0 };
-    }
+    const { stdout } = await execFilePromise(
+      'git',
+      ['-C', workDir, 'status', '--porcelain', '-b'],
+      { encoding: 'utf8', timeout: SPAWN_TIMEOUT_MS, maxBuffer: 4 * 1024 * 1024 },
+    );
 
     let dirty = false;
     let ahead = 0;
     let behind = 0;
-    for (const line of result.stdout.split('\n')) {
+    for (const line of stdout.split('\n')) {
       if (line.startsWith('## ')) {
         const m = AHEAD_BEHIND_RE.exec(line);
         if (m) {
@@ -200,31 +234,29 @@ function readStatus(workDir: string): {
         dirty = true;
       }
     }
-    const diff = dirty ? readDiffStats(workDir) : { added: 0, deleted: 0 };
-    return {
-      dirty,
-      ahead,
-      behind,
-      diffAdded: diff.added,
-      diffDeleted: diff.deleted,
-    };
+
+    if (!dirty) {
+      return { dirty: false, ahead, behind, diffAdded: 0, diffDeleted: 0 };
+    }
+
+    const diff = await readDiffStats(workDir);
+    return { dirty, ahead, behind, diffAdded: diff.added, diffDeleted: diff.deleted };
   } catch {
     return { dirty: false, ahead: 0, behind: 0, diffAdded: 0, diffDeleted: 0 };
   }
 }
 
-function readDiffStats(workDir: string): { added: number; deleted: number } {
+async function readDiffStats(workDir: string): Promise<{ added: number; deleted: number }> {
   try {
-    const result = spawnSync('git', ['-C', workDir, 'diff', '--numstat', 'HEAD', '--'], {
-      encoding: 'utf8',
-      timeout: SPAWN_TIMEOUT_MS,
-      maxBuffer: 4 * 1024 * 1024,
-    });
-    if (result.status !== 0) return { added: 0, deleted: 0 };
+    const { stdout } = await execFilePromise(
+      'git',
+      ['-C', workDir, 'diff', '--numstat', 'HEAD', '--'],
+      { encoding: 'utf8', timeout: SPAWN_TIMEOUT_MS, maxBuffer: 4 * 1024 * 1024 },
+    );
 
     let added = 0;
     let deleted = 0;
-    for (const line of result.stdout.split('\n')) {
+    for (const line of stdout.split('\n')) {
       if (!line) continue;
       const [addedText, deletedText] = line.split('\t');
       added += parseDiffNumstatCount(addedText);
@@ -242,35 +274,27 @@ function parseDiffNumstatCount(value: string | undefined): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function readPullRequest(workDir: string): Promise<PullRequestInfo | null> {
-  return new Promise((resolve) => {
-    try {
-      execFile(
-        'gh',
-        ['pr', 'view', '--json', 'number,url'],
-        {
-          cwd: workDir,
-          encoding: 'utf8',
-          env: {
-            ...process.env,
-            GH_NO_UPDATE_NOTIFIER: '1',
-            GH_PROMPT_DISABLED: '1',
-          },
-          timeout: PR_SPAWN_TIMEOUT_MS,
-          maxBuffer: 256 * 1024,
+async function readPullRequest(workDir: string): Promise<PullRequestInfo | null> {
+  try {
+    const { stdout } = await execFilePromise(
+      'gh',
+      ['pr', 'view', '--json', 'number,url'],
+      {
+        cwd: workDir,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GH_NO_UPDATE_NOTIFIER: '1',
+          GH_PROMPT_DISABLED: '1',
         },
-        (error, stdout) => {
-          if (error !== null) {
-            resolve(null);
-            return;
-          }
-          resolve(parsePullRequest(stdout));
-        },
-      );
-    } catch {
-      resolve(null);
-    }
-  });
+        timeout: PR_SPAWN_TIMEOUT_MS,
+        maxBuffer: 256 * 1024,
+      },
+    );
+    return parsePullRequest(stdout);
+  } catch {
+    return null;
+  }
 }
 
 function samePullRequest(a: PullRequestInfo | null, b: PullRequestInfo | null): boolean {
@@ -316,6 +340,7 @@ export interface FormatGitBadgeOptions {
 }
 
 export function formatGitBadgeBase(status: GitStatus): string {
+  const branch = status.branch ?? '';
   const parts: string[] = [];
   const diff = formatDiffStats(status);
   if (diff) parts.push(diff);
@@ -323,7 +348,7 @@ export function formatGitBadgeBase(status: GitStatus): string {
   if (status.ahead > 0) sync += `↑${status.ahead}`;
   if (status.behind > 0) sync += `↓${status.behind}`;
   if (sync) parts.push(sync);
-  return parts.length === 0 ? status.branch : `${status.branch} [${parts.join(' ')}]`;
+  return parts.length === 0 ? branch : `${branch} [${parts.join(' ')}]`;
 }
 
 export function formatPullRequestBadge(

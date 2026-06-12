@@ -136,8 +136,7 @@ export class AgentBatchTool implements BuiltinTool<AgentBatchInput> {
     );
 
     // Build structured output.
-    const lines: string[] = [];
-    lines.push(`## Parallel Agent Batch Results (${spawned.length} tasks)`);
+    const lines: string[] = [`## Parallel Agent Batch Results (${spawned.length} tasks)`];
 
     for (let i = 0; i < results.length; i++) {
       const r = results[i]!;
@@ -211,7 +210,7 @@ function aggregateVotes(results: string[], mode: 'vote' | 'best_of'): string {
   // Count occurrences (case-insensitive, normalized whitespace)
   const counts = new Map<string, number>();
   for (const r of results) {
-    const normalized = r.toLowerCase().replace(/\s+/g, ' ').trim();
+    const normalized = r.toLowerCase().replaceAll(/\s+/g, ' ').trim();
     counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
   }
 
@@ -237,7 +236,7 @@ function aggregateVotes(results: string[], mode: 'vote' | 'best_of'): string {
     lines.push('');
     lines.push('All answers:');
     for (let i = 0; i < results.length; i++) {
-      const match = results[i]!.toLowerCase().replace(/\s+/g, ' ').trim() === best ? '✅' : '❌';
+      const match = results[i]!.toLowerCase().replaceAll(/\s+/g, ' ').trim() === best ? '✅' : '❌';
       lines.push(`  [${i + 1}] ${match} ${results[i]!.slice(0, 120)}${results[i]!.length > 120 ? '...' : ''}`);
     }
   } else {
@@ -250,7 +249,7 @@ function aggregateVotes(results: string[], mode: 'vote' | 'best_of'): string {
       lines.push('Other results:');
       const seen = new Set<string>();
       for (const r of results) {
-        const normalized = r.toLowerCase().replace(/\s+/g, ' ').trim();
+        const normalized = r.toLowerCase().replaceAll(/\s+/g, ' ').trim();
         if (normalized !== best && !seen.has(normalized)) {
           seen.add(normalized);
           lines.push(`  - ${r.slice(0, 120)}${r.length > 120 ? '...' : ''}`);

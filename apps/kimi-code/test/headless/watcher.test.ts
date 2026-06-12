@@ -36,10 +36,13 @@ describe('startWatcher', () => {
     });
 
     // Get the watch callback
-    const watchCallback = vi.mocked(watch).mock.calls[0]![2] as (
-      eventType: string,
-      filename: string | null,
-    ) => void;
+    const watchCallback = (
+      vi.mocked(watch).mock.calls[0] as unknown as [
+        string,
+        { recursive: boolean },
+        (eventType: string, filename: string | null) => void,
+      ]
+    )[2];
 
     // Should not crash on ignored files
     watchCallback('change', 'node_modules/foo.ts');
@@ -48,6 +51,7 @@ describe('startWatcher', () => {
     // Non-ignored files should set up timers
     watchCallback('change', 'src/index.ts');
 
+    expect(handle.stop).not.toThrow();
     handle.stop();
   });
 

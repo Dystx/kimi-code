@@ -1,5 +1,4 @@
 import type { ContextMessage } from '#/agent/context';
-import type { Agent } from '..';
 import { DynamicInjector } from './injector';
 
 const MEMORY_VARIANT = 'memory';
@@ -17,9 +16,7 @@ export class MemoryInjector extends DynamicInjector {
   protected override readonly injectionVariant = MEMORY_VARIANT;
   private compactedSinceLastInject = false;
 
-  constructor(agent: Agent) {
-    super(agent);
-  }
+
 
   override onContextCompacted(_compactedCount: number): void {
     super.onContextCompacted(_compactedCount);

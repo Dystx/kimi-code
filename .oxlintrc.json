@@ -22,6 +22,9 @@
     "unicorn/prefer-node-protocol": "error",
     "unicorn/no-useless-undefined": "off",
     "unicorn/no-lonely-if": "off",
+
+    "import/no-named-as-default-member": "off",
+    "eslint/no-new": "off",
     "unicorn/no-array-callback-reference": "off",
     "typescript/prefer-promise-reject-errors": "off",
     "typescript/no-unsafe-function-type": "off",

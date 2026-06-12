@@ -9,7 +9,7 @@ export interface SessionCheckpoint {
   messages: unknown[];
   goals: unknown[];
   tasks: unknown[];
-  plan: unknown | null;
+  plan: unknown;
   usage: unknown;
   cwd: string;
 }
@@ -101,7 +101,7 @@ export class SessionCheckpointManager {
           // skip malformed checkpoint files
         }
       }
-      return results.sort((a, b) => b.timestamp - a.timestamp);
+      return results.toSorted((a, b) => b.timestamp - a.timestamp);
     } catch {
       return [];
     }

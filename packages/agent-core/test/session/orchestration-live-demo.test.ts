@@ -20,22 +20,34 @@ function createSessionRpc(): SDKSessionRPC {
   } as SDKSessionRPC;
 }
 
+function createSkillDefinition(name: string, description: string, content: string): SkillDefinition {
+  return {
+    name,
+    description,
+    path: `/tmp/${name}.md`,
+    dir: '/tmp',
+    content,
+    metadata: { description, type: 'prompt' },
+    source: 'project',
+  };
+}
+
 function createMockSkillRegistry(): SkillRegistry {
   const skills = new Map<string, SkillDefinition>([
-    ['quality-gate', { name: 'quality-gate', description: 'Run quality gates', body: 'Run lint, typecheck, and tests before finishing.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
-    ['code-review', { name: 'code-review', description: 'Review code changes', body: 'Review the diff for correctness, style, and potential issues.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
-    ['plan-first', { name: 'plan-first', description: 'Plan before acting', body: 'Break the task into steps and create a plan before implementation.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
-    ['troubleshooting', { name: 'troubleshooting', description: 'Troubleshoot issues', body: 'Identify the root cause and propose fixes.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
-    ['evidence-contract', { name: 'evidence-contract', description: 'Require evidence', body: 'Every claim must be backed by test output, logs, or code references.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
-    ['test-debug-loop', { name: 'test-debug-loop', description: 'Debug test failures', body: 'Run tests, analyze failures, fix the root cause, re-run.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
+    ['quality-gate', createSkillDefinition('quality-gate', 'Run quality gates', 'Run lint, typecheck, and tests before finishing.')],
+    ['code-review', createSkillDefinition('code-review', 'Review code changes', 'Review the diff for correctness, style, and potential issues.')],
+    ['plan-first', createSkillDefinition('plan-first', 'Plan before acting', 'Break the task into steps and create a plan before implementation.')],
+    ['troubleshooting', createSkillDefinition('troubleshooting', 'Troubleshoot issues', 'Identify the root cause and propose fixes.')],
+    ['evidence-contract', createSkillDefinition('evidence-contract', 'Require evidence', 'Every claim must be backed by test output, logs, or code references.')],
+    ['test-debug-loop', createSkillDefinition('test-debug-loop', 'Debug test failures', 'Run tests, analyze failures, fix the root cause, re-run.')],
   ]);
 
   return {
     getSkill: (name: string) => skills.get(name),
-    renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.body,
+    renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.content,
     listSkills: () => Array.from(skills.values()),
     hasSkill: (name: string) => skills.has(name),
-  } as SkillRegistry;
+  } as unknown as SkillRegistry;
 }
 
 describe('Orchestration live demo', () => {
@@ -113,13 +125,12 @@ priority = 1
     try {
       console.log('\n▶ PHASE 1: Session creation with orchestration config');
       const session = new Session({
-        cwd: projectDir,
         homedir: tmpDir,
         kaos: testKaos.withCwd(projectDir),
         rpc: createSessionRpc(),
       });
 
-      const hooks = session.orchestrationHooks!;
+      const hooks = session.orchestrationHooks;
       console.log('  ✓ Session created');
       console.log('  ✓ Orchestration hooks active');
       console.log('  ✓ Initial metrics:', hooks.metrics());
@@ -218,6 +229,8 @@ priority = 1
       console.log('\n════════════════════════════════════════════════════════════');
       console.log('  DEMO COMPLETE');
       console.log('════════════════════════════════════════════════════════════');
+
+      expect(hooks.metrics().eventsEmitted).toBeGreaterThan(0);
     } finally {
       await rm(tmpDir, { recursive: true, force: true });
     }

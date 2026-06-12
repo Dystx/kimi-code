@@ -102,7 +102,7 @@ describe('Keyword matcher', () => {
 
   describe('recommendSkillsForWork', () => {
     it('recommends skills matching keywords', () => {
-      const mockRegistry: SkillRegistry = {
+      const mockRegistry = {
         getSkill: (name: string) =>
           name === 'quality-gate'
             ? ({
@@ -136,9 +136,9 @@ describe('Keyword matcher', () => {
           } as SkillDefinition,
         ],
         hasSkill: () => true,
-        renderSkillPrompt: (skill) => skill.body ?? '',
+        renderSkillPrompt: (skill: SkillDefinition) => skill.content ?? '',
         listInvocableSkills: () => [],
-      };
+      } as unknown as SkillRegistry;
 
       const results = recommendSkillsForWork('run lint and tests on my code', mockRegistry);
       expect(results.length).toBeGreaterThan(0);
@@ -146,7 +146,7 @@ describe('Keyword matcher', () => {
     });
 
     it('includes tags in matching', () => {
-      const mockRegistry: SkillRegistry = {
+      const mockRegistry = {
         getSkill: () => undefined,
         listSkills: () => [
           {
@@ -160,9 +160,9 @@ describe('Keyword matcher', () => {
           } as SkillDefinition,
         ],
         hasSkill: () => true,
-        renderSkillPrompt: (skill) => skill.body ?? '',
+        renderSkillPrompt: (skill: SkillDefinition) => skill.content ?? '',
         listInvocableSkills: () => [],
-      };
+      } as unknown as SkillRegistry;
 
       const results = recommendSkillsForWork('check wcag compliance', mockRegistry);
       expect(results.length).toBeGreaterThan(0);
@@ -170,7 +170,7 @@ describe('Keyword matcher', () => {
     });
 
     it('returns empty array when no skills match', () => {
-      const mockRegistry: SkillRegistry = {
+      const mockRegistry = {
         getSkill: () => undefined,
         listSkills: () => [
           {
@@ -184,9 +184,9 @@ describe('Keyword matcher', () => {
           } as SkillDefinition,
         ],
         hasSkill: () => true,
-        renderSkillPrompt: (skill) => skill.body ?? '',
+        renderSkillPrompt: (skill: SkillDefinition) => skill.content ?? '',
         listInvocableSkills: () => [],
-      };
+      } as unknown as SkillRegistry;
 
       const results = recommendSkillsForWork('basketball championship finals', mockRegistry);
       expect(results).toHaveLength(0);

@@ -26,7 +26,7 @@
  * @see node_modules/@agentclientprotocol/sdk/dist/schema/types.gen.d.ts (McpServer)
  */
 
-import type { McpServer, McpServerStdio } from '@agentclientprotocol/sdk';
+import type { McpServer } from '@agentclientprotocol/sdk';
 import type { McpServerConfig } from '@moonshot-ai/agent-core';
 import { log } from '@moonshot-ai/kimi-code-sdk';
 
@@ -61,7 +61,7 @@ function acpMcpServerToConfig(
   // in the discriminated union). Anything without an explicit `type`
   // is treated as stdio.
   if (!('type' in server) || typeof server.type !== 'string') {
-    const stdio = server as McpServerStdio;
+    const stdio = server;
     const config: McpServerConfig = {
       transport: 'stdio',
       command: stdio.command,
@@ -70,29 +70,24 @@ function acpMcpServerToConfig(
     };
     return { name: stdio.name, config };
   }
-  switch (server.type) {
-    case 'http': {
-      const config: McpServerConfig = {
-        transport: 'http',
-        url: server.url,
-        headers: headersArrayToRecord(server.headers),
-      };
-      return { name: server.name, config };
-    }
-    case 'sse':
-    case 'acp':
-    default: {
-      // Defensive: future ACP transports land here too. The cast is the
-      // narrowest way to read `name`/`type` off the leftover variant
-      // without re-declaring the union.
-      const fallback = server as { name?: string; type?: string };
-      log.warn('acp: dropping unsupported MCP server transport', {
-        name: fallback.name,
-        type: fallback.type,
-      });
-      return null;
-    }
+  if (server.type === 'http') {
+    const config: McpServerConfig = {
+      transport: 'http',
+      url: server.url,
+      headers: headersArrayToRecord(server.headers),
+    };
+    return { name: server.name, config };
   }
+
+  // Defensive: future ACP transports land here too. The cast is the
+  // narrowest way to read `name`/`type` off the leftover variant
+  // without re-declaring the union.
+  const fallback = server as { name?: string; type?: string };
+  log.warn('acp: dropping unsupported MCP server transport', {
+    name: fallback.name,
+    type: fallback.type,
+  });
+  return null;
 }
 
 function headersArrayToRecord(

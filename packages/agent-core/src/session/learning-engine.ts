@@ -82,7 +82,7 @@ export class SessionLearningEngine {
   /**
    * Collect orchestration effectiveness insights and add them to the report.
    */
-  private async collectOrchestrationInsights(report: LearningReport): Promise<void> {
+  private async collectOrchestrationInsights(_report: LearningReport): Promise<void> {
     // This is called after analyze() — effectiveness data comes from
     // OrchestrationHooks which is not directly accessible here. Instead,
     // insights should be passed in via the report or collected externally.

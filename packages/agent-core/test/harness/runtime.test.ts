@@ -47,8 +47,12 @@ function setCoreKaos(core: KimiCore, kaos: Promise<Kaos>): void {
 }
 
 function rejectedKaos(error: Error): Promise<Kaos> {
+  /* eslint-disable promise/no-promise-in-callback */
   const promise = Promise.reject(error) as Promise<Kaos>;
+  // Attach a no-op handler so the rejected promise is not considered unhandled
+  // while it is stored on the core before the RPC call consumes it.
   promise.catch(() => undefined);
+  /* eslint-enable promise/no-promise-in-callback */
   return promise;
 }
 

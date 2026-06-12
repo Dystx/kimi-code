@@ -6,10 +6,10 @@ import type { SkillRegistry, SkillDefinition } from '../../src/skill';
 describe('OrchestrationHooks E2E', () => {
   it('full pipeline: events → skills → drain → history', () => {
     const skills: SkillDefinition[] = [
-      { name: 'code-review', render: () => 'Review the diff carefully.' } as SkillDefinition,
-      { name: 'quality-gate', render: () => 'Run lint and tests.' } as SkillDefinition,
-      { name: 'plan-first', render: () => 'Create a plan before coding.' } as SkillDefinition,
-      { name: 'troubleshooting', render: () => 'Check error logs.' } as SkillDefinition,
+      { name: 'code-review', description: 'Review code changes', path: '/tmp/code-review.md', dir: '/tmp', content: 'Review the diff carefully.', metadata: { description: 'Review code changes', type: 'prompt' }, source: 'project' },
+      { name: 'quality-gate', description: 'Run quality gates', path: '/tmp/quality-gate.md', dir: '/tmp', content: 'Run lint and tests.', metadata: { description: 'Run quality gates', type: 'prompt' }, source: 'project' },
+      { name: 'plan-first', description: 'Plan before acting', path: '/tmp/plan-first.md', dir: '/tmp', content: 'Create a plan before coding.', metadata: { description: 'Plan before acting', type: 'prompt' }, source: 'project' },
+      { name: 'troubleshooting', description: 'Troubleshoot issues', path: '/tmp/troubleshooting.md', dir: '/tmp', content: 'Check error logs.', metadata: { description: 'Troubleshoot issues', type: 'prompt' }, source: 'project' },
     ];
 
     const registry: SkillRegistry = {
@@ -64,7 +64,7 @@ describe('OrchestrationHooks E2E', () => {
 
   it('skill repetition suppression after MAX_REPETITION', () => {
     const skills: SkillDefinition[] = [
-      { name: 'code-review', render: () => 'Review' } as SkillDefinition,
+      { name: 'code-review', description: 'Review code changes', path: '/tmp/code-review.md', dir: '/tmp', content: 'Review', metadata: { description: 'Review code changes', type: 'prompt' }, source: 'project' },
     ];
 
     const registry: SkillRegistry = {
@@ -97,7 +97,7 @@ describe('OrchestrationHooks E2E', () => {
 
   it('resets skill repetition on goal completion', () => {
     const skills: SkillDefinition[] = [
-      { name: 'code-review', render: () => 'Review' } as SkillDefinition,
+      { name: 'code-review', description: 'Review code changes', path: '/tmp/code-review.md', dir: '/tmp', content: 'Review', metadata: { description: 'Review code changes', type: 'prompt' }, source: 'project' },
     ];
 
     const registry: SkillRegistry = {
@@ -160,12 +160,17 @@ describe('OrchestrationHooks E2E', () => {
   it('injection size cap prevents context bloat', () => {
     const bigSkill: SkillDefinition = {
       name: 'huge-skill',
-      render: () => 'x'.repeat(5000),
-    } as SkillDefinition;
+      description: 'Huge skill',
+      path: '/tmp/huge-skill.md',
+      dir: '/tmp',
+      content: 'x'.repeat(5000),
+      metadata: { description: 'Huge skill', type: 'prompt' },
+      source: 'project',
+    };
 
     const registry: SkillRegistry = {
       getSkill: (name: string) => (name === 'huge-skill' ? bigSkill : undefined),
-      renderSkillPrompt: (skill: SkillDefinition) => 'x'.repeat(5000),
+      renderSkillPrompt: () => 'x'.repeat(5000),
     } as unknown as SkillRegistry;
 
     const hooks = new OrchestrationHooks([
@@ -191,8 +196,8 @@ describe('OrchestrationHooks E2E', () => {
 
   it('deduplication prevents duplicate skill triggers for same event', () => {
     const skills: SkillDefinition[] = [
-      { name: 'code-review', render: () => 'Review' } as SkillDefinition,
-      { name: 'evidence-contract', render: () => 'Contract' } as SkillDefinition,
+      { name: 'code-review', description: 'Review code changes', path: '/tmp/code-review.md', dir: '/tmp', content: 'Review', metadata: { description: 'Review code changes', type: 'prompt' }, source: 'project' },
+      { name: 'evidence-contract', description: 'Require evidence', path: '/tmp/evidence-contract.md', dir: '/tmp', content: 'Contract', metadata: { description: 'Require evidence', type: 'prompt' }, source: 'project' },
     ];
 
     const registry: SkillRegistry = {

@@ -28,9 +28,8 @@ import {
   type SubagentSuspendedEvent,
   type QueuedSubagentTask,
 } from './subagent-batch';
-import SUMMARY_CONTINUATION_PROMPT from './summary-continuation.md';
+import SUMMARY_CONTINUATION_PROMPT from './summary-continuation.md?raw';
 import { createWorktree, removeWorktree } from './worktree';
-import type { LoopTurnStopReason } from '../loop/types';
 
 export const DEFAULT_SUBAGENT_TIMEOUT_MS = 30 * 60 * 1000;
 export const DEFAULT_SUBAGENT_TIMEOUT_DESCRIPTION = '30 minutes';
@@ -720,12 +719,6 @@ function checkBudgets(
         `Subagent exceeded time budget (${Math.round(elapsed / 1000)}s/${Math.round(options.timeBudgetMs / 1000)}s)`,
       );
     }
-  }
-}
-
-function throwIfSubagentStoppedAtMaxTokens(stopReason: LoopTurnStopReason | undefined): void {
-  if (stopReason === 'max_tokens') {
-    throw new Error(`${SUBAGENT_MAX_TOKENS_ERROR}.`);
   }
 }
 

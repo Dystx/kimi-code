@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * stdout-safe logging guard.
  *

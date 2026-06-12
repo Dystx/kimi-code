@@ -567,6 +567,8 @@ export interface SessionStatusSnapshot {
     readonly fractionUsed?: number;
   } | null;
   readonly backgroundTasks: number;
+  readonly backgroundBashTasks: number;
+  readonly backgroundAgentTasks: number;
   readonly subagents: number;
   readonly hooks: number;
   readonly contextUsage: number;

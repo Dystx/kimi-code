@@ -40,8 +40,7 @@ export class SubagentStatusTool implements BuiltinTool<SubagentStatusInput> {
       return Promise.resolve({ output: 'No subagents have been spawned yet.' });
     }
 
-    const lines: string[] = [];
-    lines.push(`## Subagent Status (${statuses.size} total)`);
+    const lines: string[] = [`## Subagent Status (${statuses.size} total)`];
 
     let runningCount = 0;
     let completedCount = 0;
@@ -63,7 +62,7 @@ export class SubagentStatusTool implements BuiltinTool<SubagentStatusInput> {
           : '';
         lines.push(`- **${agentId}** — ✅ completed (${durationSec}s${usage})`);
         if (status.result.length > 0) {
-          const preview = status.result.slice(0, 200).replace(/\n/g, ' ');
+          const preview = status.result.slice(0, 200).replaceAll('\n', ' ');
           lines.push(`  result: ${preview}${status.result.length > 200 ? '...' : ''}`);
         }
       } else {

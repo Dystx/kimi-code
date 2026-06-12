@@ -8,7 +8,7 @@
  * Checkpoints are stored per-session in the agent homedir.
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'pathe';
 import { z } from 'zod';
 

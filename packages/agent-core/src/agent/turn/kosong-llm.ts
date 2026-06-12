@@ -94,9 +94,7 @@ export class KosongLLM implements LLM {
       streamEndedAt = Date.now();
     };
     const markStreamOutput = (): void => {
-      if (firstChunkAt === undefined) {
-        firstChunkAt = Date.now();
-      }
+      firstChunkAt ??= Date.now();
     };
     const callbacks = buildKosongCallbacks(params, markStreamOutput);
 

@@ -163,13 +163,13 @@ function main() {
   const workspaceMap = buildWorkspaceMap(dirs);
 
   if (!workspaceMap.has(START_PKG)) {
-    console.error(`Start package ${START_PKG} not found in workspace.`);
+    process.stderr.write(`Start package ${START_PKG} not found in workspace.\n`);
     process.exit(1);
   }
 
   const closure = resolveWorkspaceDeps(workspaceMap, START_PKG);
   /** @type {string[]} */
-  const closureNames = [...closure].sort((a, b) => a.localeCompare(b));
+  const closureNames = [...closure].toSorted((a, b) => a.localeCompare(b));
 
   const flake = parseFlakeNix();
   const flakeNameSet = new Set(flake.names);
@@ -197,44 +197,44 @@ function main() {
   const ok = missingNames.length === 0 && missingPaths.length === 0;
 
   if (!ok) {
-    console.error("❌ flake.nix workspace lists are out of sync.\n");
+    process.stderr.write("❌ flake.nix workspace lists are out of sync.\n\n");
 
     if (missingNames.length > 0) {
-      console.error(
-        "The following workspace packages are missing from flake.nix workspaceNames:"
+      process.stderr.write(
+        "The following workspace packages are missing from flake.nix workspaceNames:\n"
       );
       for (const n of missingNames) {
-        console.error(`  - ${n}`);
+        process.stderr.write(`  - ${n}\n`);
       }
-      console.error("");
+      process.stderr.write("\n");
     }
 
     if (missingPaths.length > 0) {
-      console.error(
-        "The following workspace paths are missing from flake.nix workspacePaths:"
+      process.stderr.write(
+        "The following workspace paths are missing from flake.nix workspacePaths:\n"
       );
       for (const { name, path } of missingPaths) {
-        console.error(`  - ${path}  (${name})`);
+        process.stderr.write(`  - ${path}  (${name})\n`);
       }
-      console.error("");
+      process.stderr.write("\n");
     }
 
-    console.error(
-      "Please add the missing entries to both workspaceNames and workspacePaths in flake.nix."
+    process.stderr.write(
+      "Please add the missing entries to both workspaceNames and workspacePaths in flake.nix.\n"
     );
-    console.error(
-      `\nExpected workspaceNames (${flake.names.length + missingNames.length} total):`
+    process.stderr.write(
+      `\nExpected workspaceNames (${flake.names.length + missingNames.length} total):\n`
     );
     const expectedNames = new Set([...flake.names, ...missingNames.map((m) => m)]);
-    for (const n of [...expectedNames].sort((a, b) => a.localeCompare(b))) {
-      console.error(`  ${n}`);
+    for (const n of [...expectedNames].toSorted((a, b) => a.localeCompare(b))) {
+      process.stderr.write(`  ${n}\n`);
     }
 
     process.exit(1);
   }
 
-  console.log(
-    `✅ All ${closureNames.length} recursive workspace dependencies are present in flake.nix.`
+  process.stdout.write(
+    `✅ All ${closureNames.length} recursive workspace dependencies are present in flake.nix.\n`
   );
 }
 

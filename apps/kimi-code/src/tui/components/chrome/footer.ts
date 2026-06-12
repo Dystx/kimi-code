@@ -223,7 +223,6 @@ export function formatFooterGitBadge(status: GitStatus, colors: ColorPalette): s
  */
 function formatStatusBadges(
   status: SessionStatusSnapshot | null | undefined,
-  loopState: { task: string; iteration: number; maxIterations: number } | null | undefined,
   colors: ColorPalette,
 ): string[] {
   if (status === null || status === undefined) return [];
@@ -235,21 +234,18 @@ function formatStatusBadges(
     if (status.tasks.pending > 0) parts.push(`${status.tasks.pending} pending`);
     if (status.tasks.done > 0) parts.push(`${status.tasks.done} done`);
     if (status.tasks.blocked > 0) parts.push(`${status.tasks.blocked} blocked`);
-    const label = parts.length > 0 ? parts.join(', ') : `${status.tasks.total} tasks`;
+    const label =
+      parts.length > 0
+        ? parts.join(', ')
+        : `${status.tasks.total} task${status.tasks.total === 1 ? '' : 's'}`;
     badges.push(chalk.hex(colors.primary)(`[${label}]`));
   }
 
-  // Loop (from AppState when status snapshot hasn't arrived yet)
-  if (status?.loop !== null && status?.loop !== undefined) {
+  // Loop — use only the live session snapshot, never the stale AppState fallback.
+  if (status.loop !== null && status.loop !== undefined) {
     badges.push(
       chalk.hex(colors.primary)(
         `[loop ${status.loop.iteration}/${status.loop.maxIterations}]`,
-      ),
-    );
-  } else if (loopState !== null && loopState !== undefined) {
-    badges.push(
-      chalk.hex(colors.primary)(
-        `[loop ${loopState.iteration}/${loopState.maxIterations}]`,
       ),
     );
   }
@@ -269,14 +265,7 @@ function formatStatusBadges(
     badges.push(chalk.hex(costColor)(`[$${status.cost.totalDollars.toFixed(3)}${budget}]`));
   }
 
-  // Background tasks
-  if (status.backgroundTasks > 0) {
-    badges.push(
-      chalk.hex(colors.primary)(
-        `[${status.backgroundTasks} bg task${status.backgroundTasks > 1 ? 's' : ''}]`,
-      ),
-    );
-  }
+
 
   // Subagents
   if (status.subagents > 0) {
@@ -302,15 +291,6 @@ export class FooterComponent implements Component {
   private goalSnapshotKey: string | null = null;
   private goalObservedAtMs = Date.now();
   private goalTimer: ReturnType<typeof setInterval> | null = null;
-  /**
-   * Non-terminal background-task counts split by kind so the footer can
-   * render two distinct badges. `bashTasks` covers `bash-*` BPM tasks
-   * spawned via `Shell run_in_background=true`; `agentTasks` covers
-   * `agent-*` BPM tasks (background subagents). Either zero hides its
-   * respective badge.
-   */
-  private backgroundBashTaskCount = 0;
-  private backgroundAgentCount = 0;
 
   constructor(state: AppState, onRefresh: () => void = () => {}) {
     this.state = state;
@@ -341,16 +321,6 @@ export class FooterComponent implements Component {
     this.transientHint = hint;
   }
 
-  /**
-   * Sync both background-task badges with live counts. Each non-zero
-   * count produces its own bracketed badge on line 1; zeros hide them
-   * independently.
-   */
-  setBackgroundCounts(counts: { bashTasks: number; agentTasks: number }): void {
-    this.backgroundBashTaskCount = Math.max(0, counts.bashTasks);
-    this.backgroundAgentCount = Math.max(0, counts.agentTasks);
-  }
-
   invalidate(): void {}
 
   render(width: number): string[] {
@@ -370,7 +340,7 @@ export class FooterComponent implements Component {
     if (goalBadge !== null) left.push(goalBadge);
 
     // Status badges from the live session snapshot
-    const statusBadges = formatStatusBadges(state.statusSnapshot, state.loopState, colors);
+    const statusBadges = formatStatusBadges(state.statusSnapshot, colors);
     for (const badge of statusBadges) {
       left.push(badge);
     }
@@ -386,20 +356,25 @@ export class FooterComponent implements Component {
       left.push(renderedModelLabel);
     }
 
-    // Background-task badges sit immediately before cwd. `bash-*` tasks
-    // (shell processes) and `agent-*` tasks (background subagents) get
-    // separate badges so the user can distinguish them at a glance.
-    if (this.backgroundBashTaskCount > 0) {
-      const noun = this.backgroundBashTaskCount === 1 ? 'task' : 'tasks';
-      left.push(
-        chalk.hex(colors.primary)(`[${String(this.backgroundBashTaskCount)} ${noun} running]`),
-      );
-    }
-    if (this.backgroundAgentCount > 0) {
-      const noun = this.backgroundAgentCount === 1 ? 'agent' : 'agents';
-      left.push(
-        chalk.hex(colors.primary)(`[${String(this.backgroundAgentCount)} ${noun} running]`),
-      );
+    // Background tasks — split by kind so users can distinguish shell
+    // processes from background subagents at a glance. Rendered after the
+    // model so narrow terminals can drop them before primary content.
+    const status = state.statusSnapshot;
+    if (status) {
+      if (status.backgroundBashTasks > 0) {
+        left.push(
+          chalk.hex(colors.primary)(
+            `[${status.backgroundBashTasks} shell${status.backgroundBashTasks > 1 ? 's' : ''} running]`,
+          ),
+        );
+      }
+      if (status.backgroundAgentTasks > 0) {
+        left.push(
+          chalk.hex(colors.primary)(
+            `[${status.backgroundAgentTasks} agent${status.backgroundAgentTasks > 1 ? 's' : ''} running]`,
+          ),
+        );
+      }
     }
 
     const cwd = shortenCwd(state.workDir);

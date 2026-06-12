@@ -32,7 +32,7 @@ describe('SessionTaskRegistry orchestration events', () => {
     registry.update(dep.id, { status: 'completed' });
 
     // Wait for microtask flush
-    await new Promise((resolve) => queueMicrotask(resolve));
+    await new Promise<void>((resolve) =>{  queueMicrotask(() =>{  resolve(); }); });
 
     expect(emit).toHaveBeenCalledWith(
       expect.objectContaining({

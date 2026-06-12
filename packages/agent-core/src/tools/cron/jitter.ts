@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-code-point, unicorn/prefer-math-trunc */
 /**
  * Per-task deterministic jitter for cron fire times.
  *

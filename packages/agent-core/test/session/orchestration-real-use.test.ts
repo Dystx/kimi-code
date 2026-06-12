@@ -59,14 +59,13 @@ priority = 0
 
   it('loads orchestration config from project config.toml', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
     expect(session.orchestrationHooks).toBeDefined();
-    const metrics = session.orchestrationHooks!.metrics();
+    const metrics = session.orchestrationHooks.metrics();
     expect(metrics.queueDepth).toBe(0);
     expect(metrics.historyDepth).toBe(0);
 
@@ -75,36 +74,35 @@ priority = 0
 
   it('emits events and tracks them in history', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'subagent.completed',
       payload: { hasDiff: true, subagentId: 'sub-1' },
       priority: 3,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'task.completed',
       payload: { isCodeTask: true, taskId: 'task-1' },
       priority: 2,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'goal.started',
       payload: { taskCount: 5, goalId: 'goal-1' },
       priority: 1,
     });
 
-    const recent = session.orchestrationHooks!.getRecentEvents();
+    const recent = session.orchestrationHooks.getRecentEvents();
     expect(recent.map(e => e.type)).toEqual([
       'subagent.completed',
       'task.completed',
       'goal.started',
     ]);
 
-    const metrics = session.orchestrationHooks!.metrics();
+    const metrics = session.orchestrationHooks.metrics();
     expect(metrics.eventsEmitted).toBe(3);
     expect(metrics.queueDepth).toBe(3);
 
@@ -113,24 +111,23 @@ priority = 0
 
   it('generates adaptive goal continuation context', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'subagent.completed',
       payload: { hasDiff: true, subagentId: 'sub-1' },
       priority: 3,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'task.completed',
       payload: { isCodeTask: true, taskId: 'task-1' },
       priority: 2,
     });
 
-    const ctx = session.orchestrationHooks!.getGoalContinuationContext();
+    const ctx = session.orchestrationHooks.getGoalContinuationContext();
     expect(ctx).toContain('subagent(s) completed');
     expect(ctx).toContain('task(s) recently completed');
     expect(ctx).toContain('[Orchestration context]');
@@ -140,13 +137,12 @@ priority = 0
 
   it('persists queue and history across sessions', async () => {
     const session1 = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    session1.orchestrationHooks!.emit({
+    session1.orchestrationHooks.emit({
       type: 'goal.started',
       payload: { taskCount: 3, goalId: 'goal-1' },
       priority: 1,
@@ -164,15 +160,14 @@ priority = 0
 
     // Load into new session
     const session2 = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    await session2.orchestrationHooks!.load();
+    await session2.orchestrationHooks.load();
 
-    const recent = session2.orchestrationHooks!.getRecentEvents();
+    const recent = session2.orchestrationHooks.getRecentEvents();
     expect(recent.map(e => e.type)).toEqual(['goal.started']);
 
     await session2.close();
@@ -180,29 +175,28 @@ priority = 0
 
   it('rate-limits health.degraded events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'health.degraded',
       payload: { reason: 'high_latency' },
       priority: 0,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'health.degraded',
       payload: { reason: 'high_latency' },
       priority: 0,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'health.degraded',
       payload: { reason: 'memory_pressure' },
       priority: 0,
     });
 
-    const metrics = session.orchestrationHooks!.metrics();
+    const metrics = session.orchestrationHooks.metrics();
     // All 3 emitted, but 2 should be rate-limited (same cooldown bucket)
     expect(metrics.eventsEmitted).toBe(3);
     // Only 1 should be in queue due to cooldown
@@ -213,24 +207,23 @@ priority = 0
 
   it('deduplicates identical events', async () => {
     const session = new Session({
-      cwd: projectDir,
       homedir: tmpDir,
       kaos: testKaos.withCwd(projectDir),
       rpc: createSessionRpc(),
     });
 
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'task.completed',
       payload: { taskId: 'same-task', isCodeTask: true },
       priority: 2,
     });
-    session.orchestrationHooks!.emit({
+    session.orchestrationHooks.emit({
       type: 'task.completed',
       payload: { taskId: 'same-task', isCodeTask: true },
       priority: 2,
     });
 
-    const metrics = session.orchestrationHooks!.metrics();
+    const metrics = session.orchestrationHooks.metrics();
     expect(metrics.eventsEmitted).toBe(2);
     expect(metrics.eventsDeduped).toBe(1);
     expect(metrics.queueDepth).toBe(1);

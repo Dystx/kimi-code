@@ -58,7 +58,7 @@ function loopEventSummary(ev: LoopRecordedEvent): string {
       return `result#${ev.toolCallId.slice(-8)}${ev.result.isError === true ? ' (error)' : ''}`;
     default: {
       const exhaustive: never = ev;
-      return String((exhaustive as { type?: string }).type ?? 'unknown');
+      return ((exhaustive as { type?: string }).type ?? 'unknown');
     }
   }
 }
@@ -328,6 +328,15 @@ export function renderHeadline(r: AgentRecord): HeadlineRender {
           </span>
         ),
       };
+    case 'context.undo':
+    case 'forked':
+    case 'goal.clear':
+    case 'goal.create':
+    case 'goal.update':
+    case 'micro_compaction.apply':
+    case 'swarm_mode.enter':
+    case 'swarm_mode.exit':
+      break;
   }
   // `r` is `never` here under TypeScript exhaustiveness, but at runtime
   // best-effort parsing of unknown/future protocols can deliver records

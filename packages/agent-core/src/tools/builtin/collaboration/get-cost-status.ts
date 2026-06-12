@@ -29,9 +29,10 @@ export class GetCostStatusTool implements BuiltinTool<GetCostStatusInput> {
 
   private execution(): Promise<ExecutableToolResult> {
     const status = this.tracker.status();
-    const lines: string[] = [];
-    lines.push(`## Session Cost Status`);
-    lines.push(`Total estimated spend: $${status.totalDollars.toFixed(4)}`);
+    const lines: string[] = [
+      '## Session Cost Status',
+      `Total estimated spend: $${status.totalDollars.toFixed(4)}`,
+    ];
 
     if (status.budget !== undefined) {
       lines.push(`Budget: $${status.budget.maxDollars.toFixed(2)}`);

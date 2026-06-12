@@ -34,8 +34,14 @@ export class OrchestrationSkillInjector extends DynamicInjector {
     const history = this.hooks.getRecentEvents(10);
     if (history.length > 0) {
       const historyLines = history.map((e) => {
-        const id = e.payload['subagentId'] ?? e.payload['taskId'] ?? e.payload['goalId'] ?? e.payload['jobId'] ?? '';
-        return `  [${e.type}]${id ? ` ${id}` : ''}`;
+        const id =
+          e.payload['subagentId'] ??
+          e.payload['taskId'] ??
+          e.payload['goalId'] ??
+          e.payload['jobId'] ??
+          '';
+        const idText = typeof id === 'string' ? id : JSON.stringify(id);
+        return `  [${e.type}]${idText ? ` ${idText}` : ''}`;
       });
       parts.push(`<orchestration-history>\nRecent events:\n${historyLines.join('\n')}\n</orchestration-history>`);
     }

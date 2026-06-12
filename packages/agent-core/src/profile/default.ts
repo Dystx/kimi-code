@@ -1,16 +1,16 @@
-import agentYaml from './default/agent.yaml';
-import architectYaml from './default/architect.yaml';
-import coderYaml from './default/coder.yaml';
-import debugYaml from './default/debug.yaml';
-import docsYaml from './default/docs.yaml';
-import exploreYaml from './default/explore.yaml';
-import initMd from './default/init.md';
-import performanceYaml from './default/performance.yaml';
-import planYaml from './default/plan.yaml';
-import reviewerYaml from './default/reviewer.yaml';
-import securityYaml from './default/security.yaml';
-import systemMd from './default/system.md';
-import testYaml from './default/test.yaml';
+import agentYaml from './default/agent.yaml?raw';
+import architectYaml from './default/architect.yaml?raw';
+import coderYaml from './default/coder.yaml?raw';
+import debugYaml from './default/debug.yaml?raw';
+import docsYaml from './default/docs.yaml?raw';
+import exploreYaml from './default/explore.yaml?raw';
+import initMd from './default/init.md?raw';
+import performanceYaml from './default/performance.yaml?raw';
+import planYaml from './default/plan.yaml?raw';
+import reviewerYaml from './default/reviewer.yaml?raw';
+import securityYaml from './default/security.yaml?raw';
+import systemMd from './default/system.md?raw';
+import testYaml from './default/test.yaml?raw';
 import { loadAgentProfilesFromSources } from './load';
 
 // Keyed by the source path the profile loader expects: profile YAML files

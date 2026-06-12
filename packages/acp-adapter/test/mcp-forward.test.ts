@@ -1,16 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type {
-  AgentSideConnection,
-  ClientSideConnection,
-  McpServer,
-  NewSessionRequest,
-} from '@agentclientprotocol/sdk';
 import {
   AgentSideConnection as AgentSideConnectionImpl,
   ClientSideConnection as ClientSideConnectionImpl,
   ndJsonStream,
+  type AgentSideConnection,
   type Client,
+  type ClientSideConnection,
+  type McpServer,
+  type NewSessionRequest,
   type ReadTextFileRequest,
   type ReadTextFileResponse,
   type RequestPermissionRequest,

@@ -26,7 +26,6 @@ import {
   backgroundOrigin,
   collectReplayMessageContent,
   contentPartsToText,
-  countActiveBackgroundTasks,
   createReplayRenderContext,
   formatHookResultMessageForTranscript,
   isTerminalBackgroundTask,
@@ -157,7 +156,6 @@ export class SessionReplayRenderer {
         sessionEventHandler.backgroundTaskTranscriptedTerminal.add(info.taskId);
       }
     }
-    state.footer.setBackgroundCounts(countActiveBackgroundTasks(sessionEventHandler.backgroundTasks));
     state.ui.requestRender();
   }
 

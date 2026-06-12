@@ -129,8 +129,7 @@ export class GlobTool implements BuiltinTool<GlobInput> {
     }
     const searchRoots = [path ?? this.workspace.workspaceDir];
 
-    const detailParts: string[] = [];
-    detailParts.push(`pattern: ${args.pattern}`);
+    const detailParts: string[] = [`pattern: ${args.pattern}`];
     if (args.path !== undefined) {
       detailParts.push(`path: ${args.path}`);
     }

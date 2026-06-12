@@ -3,7 +3,6 @@ import {
   log,
   type Event,
   type GoalSnapshot,
-  type HookResultEvent,
   type KimiHarness,
   type Session,
   type SessionStatus,
@@ -18,14 +17,11 @@ import {
 } from '@moonshot-ai/kimi-telemetry';
 
 import { CLI_SHUTDOWN_TIMEOUT_MS } from '#/constant/app';
-import { experimentalFeatureMap } from '#/utils/experimental-features';
 
 import { createCliTelemetryBootstrap, initializeCliTelemetry } from '../cli/telemetry';
 import { createKimiCodeHostIdentity } from '../cli/version';
 import {
   formatGoalSummaryText,
-  goalExitCode,
-  goalSummaryJson,
   parseHeadlessGoalCreate,
   type HeadlessGoalCreate,
 } from '../cli/goal-prompt';
@@ -126,8 +122,8 @@ export async function runHeadless(options: HeadlessOptions): Promise<HeadlessRes
       afk: true,
     });
 
-    const flagMap = experimentalFeatureMap(await harness.getExperimentalFeatures());
-    const goalCreate = parseHeadlessGoalCreate(options.prompt, flagMap['goal_command'] === true);
+
+    const goalCreate = parseHeadlessGoalCreate(options.prompt);
     if (goalCreate !== undefined) {
       result = await runHeadlessGoalSession(
         session,
@@ -253,7 +249,7 @@ async function runHeadlessGoalSession(
 async function runHeadlessTurn(
   session: Session,
   prompt: string,
-  maxTurns: number,
+  _maxTurns: number,
 ): Promise<HeadlessResult> {
   let activeTurnId: number | undefined;
   let activeAgentId: string | undefined;
@@ -339,6 +335,11 @@ async function runHeadlessTurn(
           case 'turn.started':
           case 'turn.step.completed':
           case 'warning':
+            return;
+          case 'session.status':
+          case 'subagent.progress':
+          case 'subagent.started':
+          case 'subagent.suspended':
             return;
         }
       });
@@ -472,8 +473,12 @@ export function installHeadlessTerminationCleanup(
       promptProcess.exit(signal === 'SIGINT' ? 130 : 143);
     }
   };
-  const onSigint = () => exitAfterCleanup('SIGINT');
-  const onSigterm = () => exitAfterCleanup('SIGTERM');
+  const onSigint = (): void => {
+    void exitAfterCleanup('SIGINT');
+  };
+  const onSigterm = (): void => {
+    void exitAfterCleanup('SIGTERM');
+  };
   promptProcess.once('SIGINT', onSigint);
   promptProcess.once('SIGTERM', onSigterm);
   return () => {

@@ -103,7 +103,7 @@ export class MemoryStore {
           // Skip invalid JSON
         }
       }
-      return memories.sort((a, b) => b.timestamp - a.timestamp);
+      return memories.toSorted((a, b) => b.timestamp - a.timestamp);
     } catch {
       return [];
     }
@@ -137,7 +137,7 @@ export class MemoryStore {
 
     const scored = memories.map((memory, index) => {
       const doc = docs[index]!;
-      const tagsLower = memory.tags.map((t) => t.toLowerCase());
+      const tagsLower = new Set(memory.tags.map((t) => t.toLowerCase()));
 
       // Base relevance via BM25
       let score = hasQuery ? scorer.score(doc, queryTerms) : 0;
@@ -152,7 +152,7 @@ export class MemoryStore {
       let tagMatch = false;
       if (tags !== undefined) {
         for (const tag of tags) {
-          if (tagsLower.includes(tag.toLowerCase())) {
+          if (tagsLower.has(tag.toLowerCase())) {
             score += 2;
             tagMatch = true;
           }
@@ -161,7 +161,7 @@ export class MemoryStore {
 
       // WorkDir affinity
       let workDirMatch = false;
-      if (workDirTag !== undefined && tagsLower.includes(workDirTag.toLowerCase())) {
+      if (workDirTag !== undefined && tagsLower.has(workDirTag.toLowerCase())) {
         score += 4;
         workDirMatch = true;
       }
@@ -183,7 +183,7 @@ export class MemoryStore {
 
     return scored
       .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score)
+      .toSorted((a, b) => b.score - a.score)
       .slice(0, limit)
       .map(({ memory, score }) => ({ ...memory, relevanceScore: Math.round(score * 100) / 100 }));
   }

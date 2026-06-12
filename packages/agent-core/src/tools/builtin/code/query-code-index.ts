@@ -89,17 +89,18 @@ export class QueryCodeIndexTool implements BuiltinTool<QueryCodeIndexInput> {
         return { entry, score };
       })
       .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .toSorted((a, b) => b.score - a.score)
       .slice(0, args.max_results);
 
     if (scored.length === 0) {
       return { output: `No matches found for "${args.query}" in the code index.` };
     }
 
-    const lines: string[] = [];
-    lines.push(`## Code Index Results for "${args.query}" (${scored.length} matches)`);
-    lines.push(`Index built: ${index.builtAt}`);
-    lines.push('');
+    const lines: string[] = [
+      `## Code Index Results for "${args.query}" (${scored.length} matches)`,
+      `Index built: ${index.builtAt}`,
+      '',
+    ];
 
     for (const { entry, score } of scored) {
       lines.push(`### ${entry.path} (score: ${score}, ${entry.lines} lines)`);

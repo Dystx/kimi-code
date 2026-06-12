@@ -18,7 +18,7 @@ export interface SharedStoreEntry {
 export class SessionSharedStore {
   private readonly data = new Map<string, SharedStoreEntry>();
 
-  get(key: string): unknown | undefined {
+  get(key: string): unknown {
     const entry = this.data.get(key);
     if (entry === undefined) return undefined;
     if (entry.ttlMs !== undefined && Date.now() - entry.updatedAt > entry.ttlMs) {

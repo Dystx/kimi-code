@@ -90,26 +90,8 @@ export class BackgroundTaskController {
   }
 
   syncBadge(): void {
-    const { state } = this.host;
-    let bashTasks = 0;
-    let agentTasks = 0;
-    for (const info of this.backgroundTasks.values()) {
-      if (
-        info.status === 'completed' ||
-        info.status === 'failed' ||
-        info.status === 'timed_out' ||
-        info.status === 'killed' ||
-        info.status === 'lost'
-      ) {
-        continue;
-      }
-      if (info.kind === 'agent') {
-        agentTasks += 1;
-      } else {
-        bashTasks += 1;
-      }
-    }
-    state.footer.setBackgroundCounts({ bashTasks, agentTasks });
-    state.ui.requestRender();
+    // The footer now reads background-task counts from the live status
+    // snapshot, so we only need to request a re-render.
+    this.host.state.ui.requestRender();
   }
 }

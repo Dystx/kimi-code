@@ -8,21 +8,20 @@
  */
 
 const { readFile, writeFile, readdir } = require('node:fs/promises');
-const { join, dirname } = require('node:path');
-const { homedir } = require('node:os');
+const path = require('node:path');
 
-const PROJECT_ROOT = process.env.KIMI_PROJECT_ROOT || process.cwd();
-const MEMORY_DIR = join(PROJECT_ROOT, '.kimi-code', 'memory');
-const GRAPH_PATH = join(MEMORY_DIR, 'graph-state.json');
+const PROJECT_ROOT = process.env.KIMI_PROJECT_ROOT ?? process.cwd();
+const MEMORY_DIR = path.join(PROJECT_ROOT, '.kimi-code', 'memory');
+const GRAPH_PATH = path.join(MEMORY_DIR, 'graph-state.json');
 
 // Startup diagnostics — written to stderr so MCP clients capture it in failure messages
-console.error(`[kimi-project] started — cwd=${process.cwd()} KIMI_PROJECT_ROOT=${process.env.KIMI_PROJECT_ROOT || '(unset)'} PROJECT_ROOT=${PROJECT_ROOT}`);
+process.stderr.write(
+  `[kimi-project] started — cwd=${process.cwd()} KIMI_PROJECT_ROOT=${process.env.KIMI_PROJECT_ROOT ?? '(unset)'} PROJECT_ROOT=${PROJECT_ROOT}\n`
+);
 
 // ---------------------------------------------------------------------------
 // Protocol helpers
 // ---------------------------------------------------------------------------
-
-let requestId = 0;
 
 function send(message) {
   const json = JSON.stringify(message);
@@ -37,33 +36,29 @@ function sendError(id, code, message, data) {
   send({ jsonrpc: '2.0', id, error: { code, message, data } });
 }
 
-function sendNotification(method, params) {
-  send({ jsonrpc: '2.0', method, params });
-}
-
 // ---------------------------------------------------------------------------
 // Tool implementations
 // ---------------------------------------------------------------------------
 
 async function readMemory({ category, filename }) {
-  const dir = category ? join(MEMORY_DIR, category) : MEMORY_DIR;
+  const dir = category ? path.join(MEMORY_DIR, category) : MEMORY_DIR;
   const files = await readdir(dir).catch(() => []);
   if (filename) {
-    const target = join(dir, filename);
+    const target = path.join(dir, filename);
     const content = await readFile(target, 'utf-8').catch(() => null);
     if (content === null) return { content: [{ type: 'text', text: `File not found: ${filename}` }] };
     return { content: [{ type: 'text', text: content }] };
   }
   const entries = [];
   for (const f of files.filter((f) => f.endsWith('.md'))) {
-    const content = await readFile(join(dir, f), 'utf-8').catch(() => '');
+    const content = await readFile(path.join(dir, f), 'utf-8').catch(() => '');
     entries.push(`--- ${f} ---\n${content}`);
   }
   return { content: [{ type: 'text', text: entries.join('\n\n') }] };
 }
 
 async function writeMemory({ filename, content, append = false }) {
-  const target = join(MEMORY_DIR, filename);
+  const target = path.join(MEMORY_DIR, filename);
   if (append) {
     const existing = await readFile(target, 'utf-8').catch(() => '');
     await writeFile(target, existing + '\n' + content, 'utf-8');
@@ -73,7 +68,7 @@ async function writeMemory({ filename, content, append = false }) {
   return { content: [{ type: 'text', text: `Wrote ${filename}` }] };
 }
 
-async function graphQuery({ queryType, nodeId, nodeType, label }) {
+async function graphQuery({ queryType, nodeId, nodeType: _nodeType, label }) {
   let graph;
   try {
     graph = JSON.parse(await readFile(GRAPH_PATH, 'utf-8'));
@@ -98,10 +93,11 @@ async function graphQuery({ queryType, nodeId, nodeType, label }) {
 
   if (queryType === 'search') {
     const term = (label ?? '').toLowerCase();
-    const matches = nodes.filter((n) =>
-      (n.label ?? '').toLowerCase().includes(term) ||
-      (n.summary ?? '').toLowerCase().includes(term)
-    );
+    const matches = nodes.filter((n) => {
+      const nodeLabel = (n.label ?? '').toLowerCase();
+      const nodeSummary = (n.summary ?? '').toLowerCase();
+      return [nodeLabel, nodeSummary].some((s) => s.includes(term));
+    });
     const summary = matches.slice(0, 20).map((n) => `${n.id} [${n.type}]: ${n.label}`).join('\n');
     return { content: [{ type: 'text', text: `Matches (${matches.length}):\n${summary}` }] };
   }
@@ -129,14 +125,14 @@ async function listMemoryCategories() {
   }
   const dirs = [];
   for (const e of entries) {
-    const stat = await require('node:fs/promises').stat(join(MEMORY_DIR, e)).catch(() => null);
+    const stat = await require('node:fs/promises').stat(path.join(MEMORY_DIR, e)).catch(() => null);
     if (stat?.isDirectory()) dirs.push(e);
   }
-  const files = entries.filter((e) => e.endsWith('.md')).sort();
+  const files = entries.filter((e) => e.endsWith('.md')).toSorted();
   return {
     content: [{
       type: 'text',
-      text: `Categories: ${dirs.join(', ') || 'none'}\nTop-level md files: ${files.join(', ') || 'none'}`,
+      text: `Categories: ${dirs.length > 0 ? dirs.join(', ') : 'none'}\nTop-level md files: ${files.length > 0 ? files.join(', ') : 'none'}`,
     }],
   };
 }
@@ -269,7 +265,7 @@ process.stdin.on('data', (chunk) => {
 
     try {
       const request = JSON.parse(message);
-      handleRequest(request);
+      void handleRequest(request);
     } catch {
       // Ignore malformed JSON
     }

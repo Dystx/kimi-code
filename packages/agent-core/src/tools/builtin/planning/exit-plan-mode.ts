@@ -143,7 +143,7 @@ export class ExitPlanModeTool implements BuiltinTool<ExitPlanModeInput> {
     if (this.agent.planTracker) {
       await this.agent.planTracker.initializeFromPlan(
         resolvedPlan.plan,
-        resolvedPlan.path ? resolvedPlan.path.split('/').pop()?.replace(/\.md$/, '') || 'Plan' : 'Plan',
+        resolvedPlan.path ? resolvedPlan.path.split('/').pop()?.replace(/\.md$/, '') ?? 'Plan' : 'Plan',
       );
     }
 

@@ -154,7 +154,7 @@ export class SessionTaskRegistry {
     if (filter?.assignee !== undefined) {
       result = result.filter((t) => t.assignee === filter.assignee);
     }
-    return result.sort((a, b) => a.createdAt - b.createdAt);
+    return result.toSorted((a, b) => a.createdAt - b.createdAt);
   }
 
   delete(id: string): boolean {

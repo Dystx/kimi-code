@@ -528,8 +528,16 @@ export class OrchestrationHooks {
   private makeDedupKey(event: OrchestrationEvent): string {
     const { type, payload } = event;
     const id =
-      payload['subagentId'] ?? payload['taskId'] ?? payload['goalId'] ?? payload['reason'] ?? payload['jobId'] ?? payload['hookId'] ?? payload['serverName'] ?? '';
-    return `${type}:${id}:${event.correlationId ?? ''}`;
+      payload['subagentId'] ??
+      payload['taskId'] ??
+      payload['goalId'] ??
+      payload['reason'] ??
+      payload['jobId'] ??
+      payload['hookId'] ??
+      payload['serverName'] ??
+      '';
+    const idText = typeof id === 'string' ? id : JSON.stringify(id);
+    return `${type}:${idText}:${event.correlationId ?? ''}`;
   }
 
   private resolveSkill(registry: SkillRegistry, name: string): SkillDefinition | undefined {

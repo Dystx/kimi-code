@@ -125,6 +125,8 @@ function handleEvent(
     case 'background.task.started':
     case 'background.task.terminated':
     case 'warning':
+    case 'session.status':
+    case 'subagent.progress':
       break;
   }
 }

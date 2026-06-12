@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { join } from 'pathe';
 
 import type { Kaos } from '@moonshot-ai/kaos';

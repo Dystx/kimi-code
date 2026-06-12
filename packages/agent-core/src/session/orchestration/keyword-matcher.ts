@@ -75,7 +75,7 @@ export function extractKeywords(text: string): string[] {
   const normalized = text.toLowerCase();
   // Extract individual words and meaningful phrases
   const words = normalized
-    .replace(/[^\w\s]/g, ' ')
+    .replaceAll(/[^\w\s]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2);
 
@@ -171,5 +171,5 @@ export function recommendSkillsForWork(
     }
   }
 
-  return results.sort((a, b) => b.score - a.score).slice(0, 5);
+  return results.toSorted((a, b) => b.score - a.score).slice(0, 5);
 }

@@ -21,7 +21,7 @@ export class SubagentResultCache {
   private readonly cache = new Map<string, CachedSubagentResult>();
 
   private makeKey(profileName: string, cwd: string, prompt: string): string {
-    return createHash('sha256').update(`${profileName}\x00${cwd}\x00${prompt}`).digest('hex');
+    return createHash('sha256').update(`${profileName}\u0000${cwd}\u0000${prompt}`).digest('hex');
   }
 
   get(profileName: string, cwd: string, prompt: string): CachedSubagentResult | undefined {

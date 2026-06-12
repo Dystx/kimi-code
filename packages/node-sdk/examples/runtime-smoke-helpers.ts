@@ -241,6 +241,8 @@ function logEvent(event: Event): void {
     case 'background.task.started':
     case 'background.task.terminated':
     case 'warning':
+    case 'session.status':
+    case 'subagent.progress':
       break;
   }
 }

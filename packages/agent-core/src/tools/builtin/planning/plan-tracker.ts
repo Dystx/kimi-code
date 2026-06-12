@@ -64,7 +64,7 @@ export class PlanTrackerTool implements BuiltinTool<PlanTrackerInput> {
               const planData = await this.agent.planMode.data();
               if (planData !== null && planData.content.trim().length > 0) {
                 const title = planData.path
-                  ? planData.path.split('/').pop()?.replace(/\.md$/, '') || 'Plan'
+                  ? planData.path.split('/').pop()?.replace(/\.md$/, '') ?? 'Plan'
                   : 'Plan';
                 await tracker.initializeFromPlan(planData.content, title);
               }

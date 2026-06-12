@@ -81,7 +81,7 @@ export class SessionHealthMonitor {
     let tokenBurnRatePerMin = 0;
     if (recentUsage.length >= 2) {
       const first = recentUsage[0]!;
-      const last = recentUsage[recentUsage.length - 1]!;
+      const last = recentUsage.at(-1)!;
       const deltaTokens = last.totalTokens - first.totalTokens;
       const deltaMinutes = (last.timestamp - first.timestamp) / 60000;
       tokenBurnRatePerMin = deltaMinutes > 0 ? deltaTokens / deltaMinutes : 0;

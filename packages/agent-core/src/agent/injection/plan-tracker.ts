@@ -1,5 +1,4 @@
 import type { ContextMessage } from '#/agent/context';
-import type { Agent } from '..';
 import { DynamicInjector } from './injector';
 
 const PLAN_TRACKER_VARIANT = 'plan_tracker';
@@ -18,9 +17,7 @@ export class PlanTrackerInjector extends DynamicInjector {
   protected override readonly injectionVariant = PLAN_TRACKER_VARIANT;
   private compactedSinceLastInject = false;
 
-  constructor(agent: Agent) {
-    super(agent);
-  }
+
 
   override onContextCompacted(_compactedCount: number): void {
     super.onContextCompacted(_compactedCount);

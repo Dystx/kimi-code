@@ -147,6 +147,8 @@ export class SubAgentEventHandler {
       case 'subagent.failed':
         this.handleSubagentFailed(event);
         return;
+      case 'subagent.progress':
+        return;
     }
   }
 

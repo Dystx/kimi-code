@@ -17,7 +17,6 @@ describe('CronManager orchestration events', () => {
 
     const manager = new CronManager(agent, { pollIntervalMs: null });
     manager.store.add({
-      id: 'job1',
       cron: '0 9 * * *',
       prompt: 'daily check',
       recurring: true,
@@ -25,8 +24,10 @@ describe('CronManager orchestration events', () => {
 
     const task = manager.store.list()[0];
     if (task !== undefined) {
-      // Directly invoke handleFire via reflection to test emission
-      (manager as unknown as Record<string, unknown>)['handleFire']?.(task, { coalescedCount: 0 });
+      // Directly invoke handleFire via reflection to test emission.
+      // Bind to the manager because handleFire is an instance method.
+      const handleFire = (manager as unknown as Record<string, (t: typeof task, ctx: { readonly coalescedCount: number }) => void>)['handleFire'];
+      handleFire?.call(manager, task, { coalescedCount: 0 });
       expect(emit).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'cron.fired',

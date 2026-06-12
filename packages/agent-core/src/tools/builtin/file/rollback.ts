@@ -55,7 +55,7 @@ export class RollbackTool implements BuiltinTool<RollbackInput> {
   }
 
   private async execution(args: RollbackInput): Promise<ExecutableToolResult> {
-    if (args.confirm !== true) {
+    if (!args.confirm) {
       return {
         isError: true,
         output: 'Rollback requires confirm=true. This is a safety guard against accidental restores.',

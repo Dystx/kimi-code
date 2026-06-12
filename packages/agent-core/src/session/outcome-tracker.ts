@@ -147,15 +147,16 @@ export class SessionOutcomeTracker {
 
   generateReflection(): string {
     const snap = this.snapshot(DEFAULT_WINDOW_MS);
-    const lines: string[] = [];
-    lines.push(`# Session Reflection (${new Date().toISOString()})`);
-    lines.push('');
-    lines.push(`## Outcomes (last ${snap.windowMinutes} min)`);
-    lines.push(`- Tool calls: ${snap.totalToolCalls} (${snap.toolErrors} errors, ${Math.round(snap.toolSuccessRate * 100)}% success)`);
-    lines.push(`- Subagents: ${snap.totalSubagents} (${snap.subagentErrors} errors, ${Math.round(snap.subagentSuccessRate * 100)}% success)`);
-    lines.push(`- Turns: ${snap.totalTurns} (${snap.turnErrors} failed)`);
-    lines.push(`- Plan tasks: ${snap.totalPlanTasks} (${snap.completedPlanTasks} completed)`);
-    lines.push('');
+    const lines: string[] = [
+      `# Session Reflection (${new Date().toISOString()})`,
+      '',
+      `## Outcomes (last ${snap.windowMinutes} min)`,
+      `- Tool calls: ${snap.totalToolCalls} (${snap.toolErrors} errors, ${Math.round(snap.toolSuccessRate * 100)}% success)`,
+      `- Subagents: ${snap.totalSubagents} (${snap.subagentErrors} errors, ${Math.round(snap.subagentSuccessRate * 100)}% success)`,
+      `- Turns: ${snap.totalTurns} (${snap.turnErrors} failed)`,
+      `- Plan tasks: ${snap.totalPlanTasks} (${snap.completedPlanTasks} completed)`,
+      '',
+    ];
 
     if (snap.topTools.length > 0) {
       lines.push('## Top Tools');
@@ -206,6 +207,6 @@ export class SessionOutcomeTracker {
     }
     return Array.from(byName.entries())
       .map(([name, { count, errors }]) => ({ name, count, errorRate: count > 0 ? errors / count : 0 }))
-      .sort((a, b) => b.count - a.count);
+      .toSorted((a, b) => b.count - a.count);
   }
 }

@@ -20,16 +20,28 @@ function createSessionRpc(): SDKSessionRPC {
   } as SDKSessionRPC;
 }
 
+function createSkillDefinition(name: string, description: string, content: string): SkillDefinition {
+  return {
+    name,
+    description,
+    path: `/tmp/${name}.md`,
+    dir: '/tmp',
+    content,
+    metadata: { description, type: 'prompt' },
+    source: 'project',
+  };
+}
+
 function createMockSkillRegistry(): SkillRegistry {
   const skills = new Map<string, SkillDefinition>([
-    ['quality-gate', { name: 'quality-gate', description: 'Run quality gates', body: 'Run lint, typecheck, and tests before finishing.', parameters: { type: 'object', properties: {}, additionalProperties: false }, tags: [] }],
+    ['quality-gate', createSkillDefinition('quality-gate', 'Run quality gates', 'Run lint, typecheck, and tests before finishing.')],
   ]);
   return {
     getSkill: (name: string) => skills.get(name),
-    renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.body,
+    renderSkillPrompt: (skill: SkillDefinition, _args: string) => skill.content,
     listSkills: () => Array.from(skills.values()),
     hasSkill: (name: string) => skills.has(name),
-  } as SkillRegistry;
+  } as unknown as SkillRegistry;
 }
 
 describe('Orchestration memory integration', () => {
@@ -52,13 +64,12 @@ max_skill_repetition = 3
     try {
       // Phase 1: Create session, emit events, record failures
       const session = new Session({
-        cwd: projectDir,
         homedir: tmpDir,
         kaos: testKaos.withCwd(projectDir),
         rpc: createSessionRpc(),
       });
 
-      const hooks = session.orchestrationHooks!;
+      const hooks = session.orchestrationHooks;
       const mockAgent = {
         type: 'main',
         skills: { registry: createMockSkillRegistry() },
@@ -93,7 +104,7 @@ max_skill_repetition = 3
 
       // Find the orchestration insight memory
       const orchestrationMemory = memories.find((m: any) =>
-        m.content?.includes('low success rate') || m.tags?.includes('learning')
+        m.content?.includes('low success rate') ?? m.tags?.includes('learning')
       );
       expect(orchestrationMemory).toBeDefined();
       expect(orchestrationMemory.source).toBe('reflection');
@@ -101,16 +112,15 @@ max_skill_repetition = 3
 
       // Phase 4: Load memories into new session and verify injection format
       const session2 = new Session({
-        cwd: projectDir,
         homedir: tmpDir,
         kaos: testKaos.withCwd(projectDir),
         rpc: createSessionRpc(),
       });
 
-      const loadedMemories = await session2.memoryStore!.loadMemories();
+      const loadedMemories = await session2.memoryStore.loadMemories();
       expect(loadedMemories.length).toBeGreaterThan(0);
 
-      const formatted = session2.memoryStore!.formatForInjection(loadedMemories);
+      const formatted = session2.memoryStore.formatForInjection(loadedMemories);
       expect(formatted).toContain('## Cross-Session Memories');
       expect(formatted).toContain('low success rate');
 
@@ -133,13 +143,12 @@ max_skill_repetition = 3
 
     try {
       const session = new Session({
-        cwd: projectDir,
         homedir: tmpDir,
         kaos: testKaos.withCwd(projectDir),
         rpc: createSessionRpc(),
       });
 
-      const hooks = session.orchestrationHooks!;
+      const hooks = session.orchestrationHooks;
 
       // Seed history with mixed events
       hooks.emit({ type: 'subagent.completed', payload: { subagentId: 'sa1', hasDiff: true } });

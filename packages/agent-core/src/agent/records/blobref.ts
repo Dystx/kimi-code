@@ -1,3 +1,4 @@
+/* eslint-disable typescript/switch-exhaustiveness-check */
 import { createHash } from 'node:crypto';
 import { mkdir, open, readFile } from 'node:fs/promises';
 import { join } from 'pathe';
@@ -117,7 +118,7 @@ export class BlobStore {
       const newUrl = await this.maybeOffloadString(url);
       if (newUrl === url) continue;
 
-      if (updated === undefined) updated = { ...part };
+      updated ??= { ...part };
       updated[key] = { ...(value as object), url: newUrl };
     }
     return updated === undefined ? part : (updated as unknown as ContentPart);

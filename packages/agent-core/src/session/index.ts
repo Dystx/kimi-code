@@ -25,6 +25,7 @@ import { OrchestrationHooks, buildMappingsFromConfig } from './orchestration-hoo
 import type { PermissionManagerOptions, PermissionRule } from '../agent/permission';
 import { parseBooleanEnv, resolveConfigValue, type BackgroundConfig } from '../config';
 import { makeErrorPayload } from '../errors';
+import { abortError } from '../utils/abort';
 import {
   McpConnectionManager,
   McpOAuthService,
@@ -56,7 +57,6 @@ import type { SessionStatusSnapshot } from './status';
 
 export type { SessionStatusSnapshot } from './status';
 export type { OrchestrationContext } from './orchestration-context';
-import { abortError } from '../utils/abort';
 
 export interface SessionOptions {
   readonly kaos: Kaos;
@@ -188,6 +188,7 @@ export class Session {
   private writeMetadataPromise = Promise.resolve();
   private loopState: { task: string; iteration: number; maxIterations: number; startTime: number } | null = null;
   private emitStatusTimer: ReturnType<typeof setTimeout> | undefined;
+  private lastEmittedStatusSnapshot: SessionStatusSnapshot | null = null;
   private shutdownHandler: NodeJS.SignalsListener | undefined;
 
   constructor(public readonly options: SessionOptions) {
@@ -239,7 +240,7 @@ export class Session {
     this.hookEngine = new HookEngine(options.hooks, {
       cwd: options.kaos.getcwd(),
       sessionId: options.id,
-      onOrchestrationEvent: (event) => this.orchestrationHooks.emit(event),
+      onOrchestrationEvent: (event) =>{  this.orchestrationHooks.emit(event); },
     });
     this.telemetry = options.telemetry ?? noopTelemetryClient;
     this.toolKaos = options.kaos;
@@ -934,6 +935,10 @@ export class Session {
         fractionUsed: cost.fractionUsed,
       } : null,
       backgroundTasks: mainAgent?.background.list(true).length ?? 0,
+      backgroundBashTasks:
+        mainAgent?.background.list(true).filter((t) => t.kind === 'process').length ?? 0,
+      backgroundAgentTasks:
+        mainAgent?.background.list(true).filter((t) => t.kind === 'agent').length ?? 0,
       subagents: mainAgent?.subagentHost?.getActiveCount() ?? 0,
       hooks: mainAgent?.hooks?.list().length ?? 0,
       contextUsage,
@@ -949,10 +954,20 @@ export class Session {
     }
     this.emitStatusTimer = setTimeout(() => {
       this.emitStatusTimer = undefined;
+      const snapshot = this.getStatusSnapshot();
+      // Skip emitting when nothing has changed since the last snapshot.
+      // This prevents redundant re-renders in the TUI.
+      if (
+        this.lastEmittedStatusSnapshot !== null &&
+        JSON.stringify(snapshot) === JSON.stringify(this.lastEmittedStatusSnapshot)
+      ) {
+        return;
+      }
+      this.lastEmittedStatusSnapshot = snapshot;
       void this.rpc.emitEvent({
         type: 'session.status',
         agentId: 'main',
-        snapshot: this.getStatusSnapshot(),
+        snapshot,
       });
     }, 250);
   }

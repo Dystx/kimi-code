@@ -40,9 +40,9 @@ import { AgentBackgroundTask, type BackgroundManager } from '../../../agent/back
 import { toInputJsonSchema } from '../../support/input-schema';
 import { matchesGlobRuleSubject } from '../../support/rule-match';
 import type { SubagentResultCache } from '../../../session/subagent-cache';
-import AGENT_BACKGROUND_DISABLED_DESCRIPTION from './agent-background-disabled.md';
-import AGENT_BACKGROUND_DESCRIPTION from './agent-background-enabled.md';
-import AGENT_DESCRIPTION_BASE from './agent.md';
+import AGENT_BACKGROUND_DISABLED_DESCRIPTION from './agent-background-disabled.md?raw';
+import AGENT_BACKGROUND_DESCRIPTION from './agent-background-enabled.md?raw';
+import AGENT_DESCRIPTION_BASE from './agent.md?raw';
 
 // ── AgentTool input ──────────────────────────────────────────────────
 

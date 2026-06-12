@@ -106,7 +106,7 @@ export class ExecuteCodeTool implements BuiltinTool<ExecuteCodeInput> {
       const raced = await Promise.race([
         exited,
         new Promise<false>((resolve) => {
-          setTimeout(() => resolve(false), SIGTERM_GRACE_MS);
+          setTimeout(() =>{  resolve(false); }, SIGTERM_GRACE_MS);
         }),
       ]);
       if (!raced && proc.exitCode === null) {
